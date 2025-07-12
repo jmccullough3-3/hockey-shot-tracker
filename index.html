@@ -1,23 +1,4 @@
-I apologize for the oversight and the issues you're encountering. My goal is to deliver exactly what you envision, and it seems I missed the mark on a few critical points in the last iteration.
 
-You are absolutely right. The "Hit" and "Miss" buttons were inadvertently removed or hidden in the previous response, and that's a significant error on my part. I've re-integrated them prominently. Additionally, ensuring mobile responsiveness, especially for the chart and core functionality, is crucial, and I'll address that directly.
-
-Here's a breakdown of the changes I've made to resolve these issues and enhance the experience:
-
-1.  **Light/Dark Mode Removed:** The theme toggle and all associated light mode CSS have been completely removed. The design will now exclusively feature the refined navy and black dark mode.
-2.  **Mobile Responsiveness (Especially Graph):**
-      * **Viewport Meta Tag:** Already present, but essential for mobile.
-      * **Flexible Layouts:** I've reviewed and adjusted CSS for `control-panel` and `session-stats` to ensure they stack vertically on smaller screens, making content readable and interactive.
-      * **Graph Responsiveness:** Chart.js is inherently responsive, but to ensure it always fills its container and resizes correctly on mobile, I've confirmed `responsive: true` and `maintainAspectRatio: false` in the chart options. The `chart-container`'s padding and flex behavior have also been checked for mobile.
-      * **Font Sizes and Padding:** Adjusted some font sizes and padding for better readability and touchability on smaller screens.
-3.  **Restoring "Hit" and "Miss" Functions and Mobile Compatibility:**
-      * **Buttons Re-added:** The "HIT" and "MISS" buttons are back in the "Training Protocol" panel and are fully functional.
-      * **Mobile-Friendly Interaction:** These buttons are now your primary method for input, making the tool fully usable on mobile devices where voice recognition might be less reliable or desired.
-      * **Voice Recognition Clarification:** I will ensure the voice recognition part (which requires microphone access) is correctly initiated, but importantly, the *manual buttons provide a reliable fallback for all devices*. The error handling for microphone access will be clearer, guiding users.
-
-Here's the updated code:
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
