@@ -1,4 +1,6 @@
 
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -478,10 +480,10 @@
             .chart-title {
                 font-size: 1.1rem; /* Smaller chart title */
             }
-            /* Adjust canvas height for better mobile viewing */
+            /* Explicitly set height for canvas on mobile */
             #performanceChart {
-                height: 250px !important; /* Set a fixed height for canvas on mobile */
-                width: 100% !important; /* Ensure it fills width */
+                height: 250px !important; 
+                width: 100% !important; 
             }
         }
 
@@ -524,16 +526,20 @@
     </style>
 </head>
 <body>
+    <!-- Three.js Background Canvas -->
     <canvas id="bg-canvas"></canvas>
     
+    <!-- Animated Grid Overlay -->
     <div class="grid-overlay"></div>
 
     <div class="container">
+        <!-- Header -->
         <div class="header">
             <div class="logo">HOCKEYTECH</div>
             <div class="subtitle">SHOOTING ACCURACY TOOL</div>
         </div>
 
+        <!-- Login Panel -->
         <div id="loginPanel" class="login-panel">
             <div class="panel-title" style="text-align: center; margin-bottom: 2rem;">ACCESS TERMINAL</div>
             <div class="input-group">
@@ -547,14 +553,16 @@
             </div>
         </div>
 
+        <!-- Main App Interface -->
         <div id="appInterface" class="app-interface">
             <div class="control-panel">
+                <!-- Training Setup -->
                 <div class="panel training-setup">
                     <div class="panel-title">Training Protocol</div>
                     <div class="input-group">
                         <input type="number" id="targetShots" class="cyber-input" placeholder="PUCK COUNT" min="1" max="100" />
                     </div>
-                    <div class="puck-counter" id="puckCounter">0</div>
+                    <div class="puck-counter" id="puckCounter">0 / 0</div> <!-- Updated initial display -->
                     <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
                         <button class="cyber-btn" onclick="startSession()">START</button>
                         <button class="cyber-btn" onclick="resetSession()">RESET</button>
@@ -565,6 +573,7 @@
                     </div>
                 </div>
 
+                <!-- Status Panel -->
                 <div class="panel">
                     <div class="panel-title">System Status</div>
                     <div class="status-display" id="statusDisplay">
@@ -578,6 +587,7 @@
                 </div>
             </div>
 
+            <!-- Session Stats -->
             <div class="session-stats" id="sessionStats" style="display: none;">
                 <div class="stat-card">
                     <span class="stat-number" id="hitsCount">0</span>
@@ -593,6 +603,7 @@
                 </div>
             </div>
 
+            <!-- Results Display -->
             <div class="results-display" id="resultsDisplay">
                 <div class="panel-title">Training Complete</div>
                 <div class="accuracy-circle" id="accuracyCircle">
@@ -601,6 +612,7 @@
                 <div id="finalStats" style="font-size: 1.3rem; color: var(--primary-text-color);"></div>
             </div>
 
+            <!-- Performance Chart -->
             <div class="chart-container">
                 <div class="chart-title">Performance Analytics</div>
                 <canvas id="performanceChart"></canvas>
@@ -679,7 +691,9 @@
         let misses = 0;
         let sessionActive = false;
         let recognition = null;
-        let chart = null;
+        
+        // Chart variable to hold the Chart.js instance
+        let chart = null; 
 
         function login() {
             const user = document.getElementById("username").value.toLowerCase();
@@ -689,7 +703,7 @@
                 currentUser = user;
                 document.getElementById("loginPanel").style.display = "none";
                 document.getElementById("appInterface").style.display = "block";
-                updateChart();
+                updateChart(); // Initialize chart on successful login
                 showWelcomeMessage();
             } else {
                 showError("ACCESS DENIED - Invalid Credentials");
@@ -721,7 +735,7 @@
 
         function startSession() {
             const input = document.getElementById("targetShots").value;
-            if (!input || input <= 0 || input > 100) {
+            if (!input || parseInt(input) <= 0 || parseInt(input) > 100) {
                 showError("Invalid puck count. Enter 1-100.");
                 return;
             }
@@ -734,7 +748,8 @@
             
             document.getElementById("resultsDisplay").style.display = "none";
             document.getElementById("sessionStats").style.display = "grid";
-            document.getElementById("puckCounter").textContent = targetShots;
+            // Update puck counter to show current progress
+            document.getElementById("puckCounter").textContent = `${currentShots} / ${targetShots}`;
             
             updateSessionStats();
             updateStatus(`Training Active - Shot 1 of ${targetShots}`, 'success');
@@ -755,9 +770,10 @@
             document.getElementById("voiceIndicator").style.display = "none";
             document.getElementById("resultsDisplay").style.display = "none";
             document.getElementById("sessionStats").style.display = "none";
-            document.getElementById("puckCounter").textContent = "0";
+            document.getElementById("puckCounter").textContent = "0 / 0"; // Reset puck counter display
             document.getElementById("targetShots").value = ""; // Clear input
             
+            updateSessionStats(); // Reset displayed stats to 0
             updateStatus("System Ready - Initialize Training Protocol");
         }
 
@@ -768,6 +784,13 @@
             if (type) {
                 statusDisplay.classList.add(type);
             }
+        }
+
+        function updateSessionStats() {
+            document.getElementById("hitsCount").textContent = hits;
+            document.getElementById("missesCount").textContent = misses;
+            const accuracy = currentShots > 0 ? Math.round((hits / currentShots) * 100) : 0;
+            document.getElementById("currentAccuracy").textContent = `${accuracy}%`;
         }
 
         function recordResult(isHit) {
@@ -785,7 +808,8 @@
                 showAnimation('MISS ❌', 'miss');
             }
             
-            updateSessionStats();
+            document.getElementById("puckCounter").textContent = `${currentShots} / ${targetShots}`; // Update puck counter
+            updateSessionStats(); // Update displayed hits/misses/accuracy
             
             if (currentShots >= targetShots) {
                 endSession();
@@ -800,7 +824,6 @@
             animation.textContent = text;
             document.body.appendChild(animation);
             
-            // Remove animation after its duration
             animation.addEventListener('animationend', () => {
                 document.body.removeChild(animation);
             });
@@ -816,7 +839,6 @@
             
             const accuracy = Math.round((hits / targetShots) * 100);
             
-            // Update accuracy circle
             const accuracyCircle = document.getElementById("accuracyCircle");
             const accuracyText = document.getElementById("accuracyText");
             const finalStats = document.getElementById("finalStats");
@@ -825,14 +847,13 @@
             finalStats.innerHTML = `${hits} HITS / ${targetShots} SHOTS<br>Training Session Complete`;
             
             updateAccuracyCircleGradient(accuracy);
-            accuracyCircle.querySelector('.accuracy-text').style.color = getComputedStyle(document.documentElement).getPropertyValue('--success-color'); // Ensure text color is success
+            accuracyCircle.querySelector('.accuracy-text').style.color = getComputedStyle(document.documentElement).getPropertyValue('--success-color');
             
             document.getElementById("resultsDisplay").style.display = "block";
             updateStatus("Training Complete - Session Data Recorded", 'success');
             
-            // Save to history
             saveToHistory(accuracy);
-            updateChart();
+            updateChart(); // Update chart after session ends and data is saved
         }
 
         function updateAccuracyCircleGradient(accuracy = 0) {
@@ -901,7 +922,7 @@
                     if (sessionActive) { 
                         recognition.start();
                     }
-                    stream.getTracks().forEach(track => track.stop());
+                    stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
                 })
                 .catch(function(err) {
                     console.error("Microphone access denied:", err);
@@ -933,6 +954,7 @@
             });
             
             localStorage.setItem("hockeyTechHistory", JSON.stringify(allHistory));
+            console.log("History saved for", currentUser, ":", allHistory[currentUser]); // Debugging line
         }
 
         function updateChartColors() {
@@ -962,7 +984,7 @@
             const ctx = canvas.getContext("2d");
             
             if (chart) {
-                chart.destroy();
+                chart.destroy(); // Destroy existing chart instance to redraw
             }
             
             const history = getHistory();
@@ -1022,7 +1044,10 @@
                                     return label;
                                 },
                                 title: function(context) {
-                                    return `Date: ${history[context[0].dataIndex].date}\nShots: ${history[context[0].dataIndex].shots}\nHits: ${history[context[0].dataIndex].hits}`;
+                                    if (history[context[0].dataIndex]) {
+                                        return `Date: ${history[context[0].dataIndex].date}\nShots: ${history[context[0].dataIndex].shots}\nHits: ${history[context[0].dataIndex].hits}`;
+                                    }
+                                    return '';
                                 }
                             },
                             titleFont: { family: 'Montserrat' },
