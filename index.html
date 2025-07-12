@@ -3,11 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HockeyTech AI - Elite Training System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>HockeyTech AI - Shooting Accuracy Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* Base styles for Dark Mode (Navy & Black) */
+        :root {
+            --bg-color: #0A192F; /* Dark Navy */
+            --primary-text-color: #E6F1FF; /* Light Blue/White */
+            --secondary-text-color: #8892B0; /* Muted Grey-Blue */
+            --accent-color: #64FFDA; /* Bright Cyan */
+            --panel-bg: rgba(17, 34, 64, 0.8); /* Darker Navy with transparency */
+            --panel-border: #2A4064; /* Slightly lighter navy for borders */
+            --input-bg: rgba(0, 0, 0, 0.5);
+            --input-border: #4A608F;
+            --button-gradient-start: #0056B3; /* Darker Blue */
+            --button-gradient-end: #007BFF; /* Brighter Blue */
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --glow-color: #64FFDA; /* Matching accent for glows */
+            --success-color: #00BF63; /* Green */
+            --error-color: #DC3545; /* Red */
+            --chart-line-color: #64FFDA;
+            --chart-fill-color: rgba(100, 255, 218, 0.1);
+        }
+
+        /* Light Mode styles */
+        body.light-mode {
+            --bg-color: #F8F8F8; /* Off-White */
+            --primary-text-color: #333333; /* Dark Grey */
+            --secondary-text-color: #666666; /* Medium Grey */
+            --accent-color: #007BFF; /* Bright Blue */
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --panel-border: #DDDDDD;
+            --input-bg: rgba(255, 255, 255, 0.8);
+            --input-border: #AAAAAA;
+            --button-gradient-start: #ADD8E6; /* Light Blue */
+            --button-gradient-end: #87CEEB; /* Sky Blue */
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --glow-color: #007BFF;
+            --success-color: #28A745;
+            --error-color: #DC3545;
+            --chart-line-color: #007BFF;
+            --chart-fill-color: rgba(0, 123, 255, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -15,12 +55,13 @@
         }
 
         body {
-            font-family: 'Exo 2', sans-serif;
-            background: #000;
-            color: #ffffff;
+            font-family: 'Roboto', sans-serif;
+            background: var(--bg-color);
+            color: var(--primary-text-color);
             overflow-x: hidden;
             position: relative;
             min-height: 100vh;
+            transition: background 0.5s ease, color 0.5s ease;
         }
 
         /* Three.js background canvas */
@@ -31,6 +72,10 @@
             width: 100%;
             height: 100%;
             z-index: -1;
+            transition: opacity 0.5s ease;
+        }
+        body.light-mode #bg-canvas {
+            opacity: 0.3; /* Less prominent in light mode */
         }
 
         /* Animated grid overlay */
@@ -40,14 +85,15 @@
             left: 0;
             width: 100%;
             height: 100%;
-            opacity: 0.1;
+            opacity: 0.05;
             background-image: 
-                linear-gradient(rgba(0,255,255,0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,255,255,0.3) 1px, transparent 1px);
+                linear-gradient(var(--accent-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--accent-color) 1px, transparent 1px);
             background-size: 30px 30px;
             animation: gridMove 20s linear infinite;
             pointer-events: none;
             z-index: 1;
+            transition: background-image 0.5s ease, opacity 0.5s ease;
         }
 
         @keyframes gridMove {
@@ -55,30 +101,31 @@
             100% { transform: translate(30px, 30px); }
         }
 
-        /* Glowing particles */
+        /* Glowing particles (Adjusted for subtlety) */
         .particle {
             position: absolute;
-            width: 3px;
-            height: 3px;
-            background: radial-gradient(circle, #00ffff, transparent);
+            width: 2px;
+            height: 2px;
+            background: radial-gradient(circle, var(--accent-color), transparent);
             border-radius: 50%;
             animation: particleFloat 6s infinite ease-in-out;
+            opacity: 0.6;
         }
 
         @keyframes particleFloat {
             0%, 100% { transform: translateY(0) scale(0.5); opacity: 0.3; }
-            50% { transform: translateY(-100px) scale(1); opacity: 1; }
+            50% { transform: translateY(-100px) scale(1); opacity: 0.8; }
         }
 
         .container {
             position: relative;
             z-index: 10;
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
         }
 
-        /* Header with holographic effect */
+        /* Header */
         .header {
             text-align: center;
             margin-bottom: 4rem;
@@ -86,152 +133,167 @@
         }
 
         .logo {
-            font-family: 'Orbitron', monospace;
-            font-size: 4rem;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3.5rem;
             font-weight: 900;
-            background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+            background: linear-gradient(45deg, var(--accent-color), #FFFFFF, var(--accent-color)); /* More modern gradient */
             background-size: 300% 300%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: hologramShift 3s ease-in-out infinite;
-            text-shadow: 0 0 50px rgba(0,255,255,0.5);
+            animation: modernGradientShift 5s ease-in-out infinite;
+            text-shadow: 0 0 20px var(--glow-color); /* Softer glow */
             position: relative;
         }
+        body.light-mode .logo {
+            background: linear-gradient(45deg, var(--accent-color), #000000, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-        @keyframes hologramShift {
+        @keyframes modernGradientShift {
             0%, 100% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
         }
 
-        .logo::after {
-            content: 'HOCKEYTECH AI';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, transparent, rgba(0,255,255,0.1), transparent);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: hologramScan 4s linear infinite;
-        }
-
-        @keyframes hologramScan {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
         .subtitle {
-            font-size: 1.2rem;
-            color: #00ffff;
-            margin-top: 1rem;
+            font-family: 'Roboto', sans-serif;
+            font-size: 1.1rem;
+            color: var(--secondary-text-color);
+            margin-top: 0.8rem;
             text-transform: uppercase;
-            letter-spacing: 3px;
-            opacity: 0.8;
+            letter-spacing: 2px;
+            opacity: 0.9;
         }
 
-        /* Login form with cyberpunk styling */
-        .login-panel {
-            background: linear-gradient(135deg, rgba(0,255,255,0.1), rgba(255,0,255,0.1));
-            border: 2px solid rgba(0,255,255,0.3);
+        /* Theme Toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+            gap: 0.5rem;
+            transition: color 0.3s ease;
+        }
+        .theme-toggle:hover {
+            color: var(--primary-text-color);
+        }
+        .theme-toggle input[type="checkbox"] {
+            position: relative;
+            width: 40px;
+            height: 20px;
+            -webkit-appearance: none;
+            background: var(--panel-border);
+            outline: none;
             border-radius: 20px;
-            padding: 3rem;
+            transition: 0.4s;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+        }
+        .theme-toggle input[type="checkbox"]:checked {
+            background: var(--accent-color);
+        }
+        .theme-toggle input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            background: #fff;
+            transform: scale(1.1);
+            transition: 0.4s;
+        }
+        .theme-toggle input[type="checkbox"]:checked::before {
+            left: 22px;
+        }
+
+        /* Login form with modern styling */
+        .login-panel, .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px; /* Softer corners */
+            padding: 2.5rem;
             max-width: 500px;
             margin: 0 auto;
             position: relative;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 20px 40px rgba(0,255,255,0.2);
+            backdrop-filter: blur(8px); /* Slightly less blur */
+            box-shadow: 0 10px 20px var(--shadow-color); /* Subtler shadow */
+            transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
         }
 
-        .login-panel::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00, #00ffff);
-            border-radius: 22px;
-            z-index: -1;
-            animation: borderGlow 3s linear infinite;
-        }
-
-        @keyframes borderGlow {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
+        .panel-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.3rem;
+            color: var(--accent-color);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+            text-align: center;
+            transition: color 0.5s ease;
         }
 
         .input-group {
-            margin-bottom: 2rem;
+            margin-bottom: 1.8rem;
             position: relative;
         }
 
         .cyber-input {
             width: 100%;
-            padding: 1.5rem;
-            background: rgba(0,0,0,0.7);
-            border: 2px solid rgba(0,255,255,0.3);
-            border-radius: 10px;
-            color: #00ffff;
-            font-size: 1.1rem;
-            font-family: 'Orbitron', monospace;
+            padding: 1.2rem 1.5rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--primary-text-color);
+            font-size: 1rem;
+            font-family: 'Roboto', sans-serif;
             transition: all 0.3s ease;
             outline: none;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .cyber-input:focus {
-            border-color: #00ffff;
-            box-shadow: 0 0 20px rgba(0,255,255,0.5);
-            transform: scale(1.02);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(100,255,218,0.4); /* Accent glow */
+            transform: translateY(-2px); /* Slight lift */
         }
 
         .cyber-input::placeholder {
-            color: rgba(0,255,255,0.5);
+            color: var(--secondary-text-color);
+            opacity: 0.7;
         }
 
         .cyber-btn {
-            background: linear-gradient(45deg, #00ffff, #0099cc);
+            background: linear-gradient(45deg, var(--button-gradient-start), var(--button-gradient-end));
             border: none;
-            padding: 1.5rem 3rem;
-            border-radius: 10px;
-            color: #000;
-            font-size: 1.2rem;
-            font-weight: 600;
-            font-family: 'Orbitron', monospace;
+            padding: 1.2rem 2.5rem;
+            border-radius: 8px;
+            color: #FFFFFF; /* White text for contrast */
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
             text-transform: uppercase;
             letter-spacing: 1px;
-        }
-
-        .cyber-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: radial-gradient(circle, rgba(255,255,255,0.3), transparent);
-            transition: all 0.3s ease;
-            transform: translate(-50%, -50%);
-        }
-
-        .cyber-btn:hover::before {
-            width: 300px;
-            height: 300px;
+            box-shadow: 0 5px 15px var(--shadow-color);
         }
 
         .cyber-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(0,255,255,0.4);
+            transform: translateY(-3px); /* More pronounced lift */
+            box-shadow: 0 8px 20px var(--glow-color); /* Stronger glow on hover */
         }
 
         .cyber-btn:active {
-            transform: scale(0.95);
+            transform: translateY(0);
+            box-shadow: 0 2px 5px var(--shadow-color);
         }
 
         /* Main app interface */
@@ -241,7 +303,7 @@
         }
 
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -252,160 +314,174 @@
             margin-bottom: 3rem;
         }
 
-        .panel {
-            background: linear-gradient(135deg, rgba(0,255,255,0.1), rgba(255,0,255,0.1));
-            border: 2px solid rgba(0,255,255,0.3);
-            border-radius: 20px;
-            padding: 2rem;
-            backdrop-filter: blur(10px);
-            position: relative;
-        }
-
-        .panel-title {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.5rem;
-            color: #00ffff;
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
+        /* Specific panel adjustments */
         .training-setup {
             text-align: center;
         }
 
         .puck-counter {
-            font-size: 3rem;
-            font-family: 'Orbitron', monospace;
-            color: #00ffff;
-            margin: 1rem 0;
-            text-shadow: 0 0 20px rgba(0,255,255,0.5);
+            font-size: 3.5rem;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--accent-color);
+            margin: 1.5rem 0;
+            text-shadow: 0 0 15px var(--glow-color);
         }
 
         .status-display {
-            font-size: 1.5rem;
-            color: #ffff00;
+            font-size: 1.2rem;
+            color: var(--accent-color); /* Changed to accent color for consistency */
             margin-bottom: 2rem;
             min-height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
+            font-weight: 500;
+            transition: color 0.5s ease;
         }
+        .status-display.error {
+            color: var(--error-color);
+        }
+        .status-display.success {
+            color: var(--success-color);
+        }
+
 
         .session-stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            padding: 1.5rem; /* Add padding to make it a distinct block */
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            box-shadow: 0 8px 16px var(--shadow-color);
         }
 
         .stat-card {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(0,255,255,0.3);
-            border-radius: 10px;
+            background: var(--input-bg); /* Darker background for stat cards */
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
             padding: 1.5rem;
             text-align: center;
+            transition: background 0.5s ease, border-color 0.5s ease;
         }
 
         .stat-number {
-            font-size: 2.5rem;
-            font-family: 'Orbitron', monospace;
-            color: #00ffff;
+            font-size: 2.8rem;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--accent-color);
             display: block;
+            margin-bottom: 0.5rem;
         }
 
         .stat-label {
-            font-size: 0.9rem;
-            color: rgba(255,255,255,0.7);
+            font-size: 0.95rem;
+            color: var(--secondary-text-color);
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-weight: 400;
         }
 
         .results-display {
-            background: linear-gradient(135deg, rgba(0,255,0,0.1), rgba(0,255,255,0.1));
-            border: 2px solid rgba(0,255,0,0.3);
-            border-radius: 20px;
-            padding: 2rem;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 2.5rem;
             text-align: center;
             margin-bottom: 2rem;
             display: none;
+            box-shadow: 0 10px 20px var(--shadow-color);
         }
 
         .accuracy-circle {
-            width: 200px;
-            height: 200px;
+            width: 180px; /* Slightly smaller */
+            height: 180px;
             margin: 2rem auto;
             position: relative;
             border-radius: 50%;
-            background: conic-gradient(#00ff00 0deg, #00ff00 0deg, rgba(0,255,0,0.2) 0deg, rgba(0,255,0,0.2) 360deg);
             display: flex;
             align-items: center;
             justify-content: center;
             animation: rotateAccuracy 2s ease-in-out;
+            border: 4px solid var(--accent-color); /* Outer ring */
+            box-shadow: 0 0 20px var(--glow-color);
+            overflow: hidden; /* For conic gradient */
+            background: var(--panel-bg); /* Base background for the circle */
         }
-
-        @keyframes rotateAccuracy {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .accuracy-circle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(var(--success-color) 0deg, var(--success-color) 0deg, rgba(0,0,0,0.2) 0deg, rgba(0,0,0,0.2) 360deg);
+            z-index: 1;
+            /* Will be dynamically updated by JS */
         }
-
         .accuracy-text {
-            font-size: 3rem;
-            font-family: 'Orbitron', monospace;
-            color: #00ff00;
+            font-size: 3.2rem;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--success-color);
             font-weight: 900;
+            z-index: 2; /* Ensure text is above conic gradient */
         }
 
         .chart-container {
-            background: rgba(0,0,0,0.7);
-            border: 2px solid rgba(0,255,255,0.3);
-            border-radius: 20px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
             padding: 2rem;
             margin-top: 2rem;
+            box-shadow: 0 10px 20px var(--shadow-color);
         }
 
         .chart-title {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.5rem;
-            color: #00ffff;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.3rem;
+            color: var(--accent-color);
             text-align: center;
             margin-bottom: 2rem;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
+            font-weight: 700;
         }
 
         /* Voice recognition animation */
         .voice-indicator {
-            width: 100px;
-            height: 100px;
-            margin: 2rem auto;
+            width: 80px; /* Smaller */
+            height: 80px;
+            margin: 1.5rem auto;
             position: relative;
             display: none;
         }
 
         .voice-wave {
             position: absolute;
-            border: 2px solid #00ffff;
+            border: 2px solid var(--accent-color);
             border-radius: 50%;
             animation: voicePulse 2s infinite ease-in-out;
+            opacity: 0;
         }
 
         .voice-wave:nth-child(1) { animation-delay: 0s; }
-        .voice-wave:nth-child(2) { animation-delay: 0.5s; }
-        .voice-wave:nth-child(3) { animation-delay: 1s; }
+        .voice-wave:nth-child(2) { animation-delay: 0.4s; } /* Adjusted delays */
+        .voice-wave:nth-child(3) { animation-delay: 0.8s; }
 
         @keyframes voicePulse {
             0% {
                 width: 20px;
                 height: 20px;
-                top: 40px;
-                left: 40px;
-                opacity: 1;
+                top: 30px;
+                left: 30px;
+                opacity: 0.8;
             }
             100% {
-                width: 100px;
-                height: 100px;
+                width: 80px;
+                height: 80px;
                 top: 0;
                 left: 0;
                 opacity: 0;
@@ -419,49 +495,47 @@
             }
             
             .logo {
-                font-size: 2.5rem;
+                font-size: 2.8rem;
             }
             
             .session-stats {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: 1fr; /* Single column on small screens */
+            }
+
+            .login-panel, .panel {
+                padding: 2rem;
+            }
+
+            .cyber-input {
+                padding: 1rem 1.2rem;
+            }
+            .cyber-btn {
+                padding: 1rem 2rem;
+                font-size: 1rem;
             }
         }
 
-        /* Success animations */
-        .success-animation {
+        /* Success and Miss animations */
+        .success-animation, .miss-animation {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 1000;
-            font-size: 4rem;
-            color: #00ff00;
-            animation: successPop 0.5s ease-out;
+            font-size: 3.5rem; /* Slightly smaller for elegance */
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            animation: popOut 0.6s ease-out forwards; /* New animation */
             pointer-events: none;
+            opacity: 0; /* Start hidden */
         }
+        .success-animation { color: var(--success-color); }
+        .miss-animation { color: var(--error-color); }
 
-        @keyframes successPop {
-            0% { transform: translate(-50%, -50%) scale(0); }
-            50% { transform: translate(-50%, -50%) scale(1.2); }
-            100% { transform: translate(-50%, -50%) scale(1); }
-        }
-
-        .miss-animation {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            font-size: 4rem;
-            color: #ff0000;
-            animation: missPop 0.5s ease-out;
-            pointer-events: none;
-        }
-
-        @keyframes missPop {
-            0% { transform: translate(-50%, -50%) scale(0); }
-            50% { transform: translate(-50%, -50%) scale(1.2); }
-            100% { transform: translate(-50%, -50%) scale(1); }
+        @keyframes popOut {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; /* Fade out at end */ }
         }
     </style>
 </head>
@@ -471,9 +545,15 @@
     <div class="grid-overlay"></div>
 
     <div class="container">
+        <label class="theme-toggle" for="theme-switch">
+            Dark Mode
+            <input type="checkbox" id="theme-switch" onclick="toggleTheme()">
+            Light Mode
+        </label>
+
         <div class="header">
             <div class="logo">HOCKEYTECH AI</div>
-            <div class="subtitle">Elite Training System</div>
+            <div class="subtitle">SHOOTING ACCURACY TOOL</div>
         </div>
 
         <div id="loginPanel" class="login-panel">
@@ -536,7 +616,7 @@
                 <div class="accuracy-circle" id="accuracyCircle">
                     <div class="accuracy-text" id="accuracyText">0%</div>
                 </div>
-                <div id="finalStats" style="font-size: 1.5rem; color: #00ffff;"></div>
+                <div id="finalStats" style="font-size: 1.3rem; color: var(--primary-text-color);"></div>
             </div>
 
             <div class="chart-container">
@@ -570,7 +650,7 @@
             particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             
             const particleMaterial = new THREE.PointsMaterial({
-                color: 0x00ffff,
+                color: 0x64FFDA, // Initial accent color for particles
                 size: 2,
                 transparent: true,
                 opacity: 0.6
@@ -605,8 +685,35 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        // Theme Toggle Functionality
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+            const isLightMode = document.body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            updateChartColors();
+            updateParticleColor();
+        }
+
+        // Apply saved theme on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('theme-switch').checked = true;
+            }
+            updateChartColors(); // Ensure chart colors match on load
+            updateParticleColor();
+        });
+
+        function updateParticleColor() {
+            if (particles && particles.material) {
+                const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
+                particles.material.color.set(accentColor);
+            }
+        }
+
+
         // App logic
-        // Updated valid users and password
         const validUsers = ["jack", "callie"];
         const validPassword = "hockey";
         let currentUser = null;
@@ -636,22 +743,23 @@
         function showWelcomeMessage() {
             const statusDisplay = document.getElementById("statusDisplay");
             statusDisplay.innerHTML = `Welcome, ${currentUser.toUpperCase()}. System initialized.`;
-            statusDisplay.style.color = "#00ff00";
+            statusDisplay.classList.remove('error');
+            statusDisplay.classList.add('success');
             
             setTimeout(() => {
                 statusDisplay.innerHTML = "System Ready - Initialize Training Protocol";
-                statusDisplay.style.color = "#ffff00";
+                statusDisplay.classList.remove('success');
             }, 3000);
         }
 
         function showError(message) {
             const statusDisplay = document.getElementById("statusDisplay");
             statusDisplay.innerHTML = message;
-            statusDisplay.style.color = "#ff0000";
+            statusDisplay.classList.add('error');
             
             setTimeout(() => {
                 statusDisplay.innerHTML = "System Ready - Initialize Training Protocol";
-                statusDisplay.style.color = "#ffff00";
+                statusDisplay.classList.remove('error');
             }, 3000);
         }
 
@@ -673,7 +781,7 @@
             document.getElementById("puckCounter").textContent = targetShots;
             
             updateSessionStats();
-            updateStatus(`Training Active - Shot 1 of ${targetShots}`, "#00ff00");
+            updateStatus(`Training Active - Shot 1 of ${targetShots}`, 'success');
             startVoiceRecognition();
         }
 
@@ -692,14 +800,18 @@
             document.getElementById("sessionStats").style.display = "none";
             document.getElementById("voiceIndicator").style.display = "none";
             document.getElementById("puckCounter").textContent = "0";
+            document.getElementById("targetShots").value = ""; // Clear input
             
-            updateStatus("System Ready - Initialize Training Protocol", "#ffff00");
+            updateStatus("System Ready - Initialize Training Protocol");
         }
 
-        function updateStatus(message, color = "#ffff00") {
+        function updateStatus(message, type = null) {
             const statusDisplay = document.getElementById("statusDisplay");
             statusDisplay.innerHTML = message;
-            statusDisplay.style.color = color;
+            statusDisplay.classList.remove('error', 'success');
+            if (type) {
+                statusDisplay.classList.add(type);
+            }
         }
 
         function updateSessionStats() {
@@ -715,10 +827,10 @@
             currentShots++;
             if (isHit) {
                 hits++;
-                showHitAnimation();
+                showAnimation('HIT! 🎯', 'success');
             } else {
                 misses++;
-                showMissAnimation();
+                showAnimation('MISS ❌', 'miss');
             }
             
             updateSessionStats();
@@ -726,30 +838,20 @@
             if (currentShots >= targetShots) {
                 endSession();
             } else {
-                updateStatus(`Training Active - Shot ${currentShots + 1} of ${targetShots}`, "#00ff00");
+                updateStatus(`Training Active - Shot ${currentShots + 1} of ${targetShots}`, 'success');
             }
         }
 
-        function showHitAnimation() {
+        function showAnimation(text, type) {
             const animation = document.createElement('div');
-            animation.className = 'success-animation';
-            animation.textContent = 'HIT! 🎯';
+            animation.className = `${type}-animation`;
+            animation.textContent = text;
             document.body.appendChild(animation);
             
-            setTimeout(() => {
+            // Remove animation after its duration
+            animation.addEventListener('animationend', () => {
                 document.body.removeChild(animation);
-            }, 500);
-        }
-
-        function showMissAnimation() {
-            const animation = document.createElement('div');
-            animation.className = 'miss-animation';
-            animation.textContent = 'MISS ❌';
-            document.body.appendChild(animation);
-            
-            setTimeout(() => {
-                document.body.removeChild(animation);
-            }, 500);
+            });
         }
 
         function endSession() {
@@ -770,12 +872,18 @@
             accuracyText.textContent = `${accuracy}%`;
             finalStats.innerHTML = `${hits} HITS / ${targetShots} SHOTS<br>Training Session Complete`;
             
-            // Animate accuracy circle
+            // Animate accuracy circle - this uses the ::before pseudo-element for the gradient
             const degree = (accuracy / 100) * 360;
-            accuracyCircle.style.background = `conic-gradient(#00ff00 0deg, #00ff00 ${degree}deg, rgba(0,255,0,0.2) ${degree}deg, rgba(0,255,0,0.2) 360deg)`;
+            const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success-color');
+            
+            // Update the conic-gradient of the ::before pseudo-element
+            // This requires modifying the style sheet or a more complex approach.
+            // For simplicity and direct control, we'll update the background directly on the element.
+            accuracyCircle.style.background = `conic-gradient(${successColor} 0deg, ${successColor} ${degree}deg, rgba(0,0,0,0.2) ${degree}deg, rgba(0,0,0,0.2) 360deg)`;
+            accuracyCircle.querySelector('.accuracy-text').style.color = successColor; // Ensure text color is success
             
             document.getElementById("resultsDisplay").style.display = "block";
-            updateStatus("Training Complete - Session Data Recorded", "#00ff00");
+            updateStatus("Training Complete - Session Data Recorded", 'success');
             
             // Save to history
             saveToHistory(accuracy);
@@ -811,6 +919,21 @@
 
             recognition.onerror = (event) => {
                 console.error("Speech recognition error:", event.error);
+                if (event.error === 'not-allowed') {
+                    showError("Microphone access denied. Please enable in browser settings.");
+                } else if (event.error === 'no-speech') {
+                    // This often happens if there's a pause, recognition auto-stops
+                    // We can choose to restart it or just let it be. For continuous, it often restarts.
+                }
+            };
+
+            recognition.onend = () => {
+                // Restart recognition if session is active (for continuous recognition)
+                if (sessionActive && recognition) {
+                    recognition.start();
+                } else {
+                    document.getElementById("voiceIndicator").style.display = "none";
+                }
             };
 
             recognition.start();
@@ -838,6 +961,29 @@
             localStorage.setItem("hockeyTechHistory", JSON.stringify(allHistory));
         }
 
+        function updateChartColors() {
+            const rootStyles = getComputedStyle(document.documentElement);
+            const primaryTextColor = rootStyles.getPropertyValue('--primary-text-color');
+            const secondaryTextColor = rootStyles.getPropertyValue('--secondary-text-color');
+            const accentColor = rootStyles.getPropertyValue('--chart-line-color');
+            const chartFillColor = rootStyles.getPropertyValue('--chart-fill-color');
+            const gridColor = rootStyles.getPropertyValue('--panel-border');
+
+            if (chart) {
+                chart.options.scales.x.ticks.color = primaryTextColor;
+                chart.options.scales.x.grid.color = gridColor;
+                chart.options.scales.y.ticks.color = primaryTextColor;
+                chart.options.scales.y.grid.color = gridColor;
+                chart.options.plugins.legend.labels.color = primaryTextColor;
+                
+                chart.data.datasets[0].borderColor = accentColor;
+                chart.data.datasets[0].backgroundColor = chartFillColor;
+                chart.data.datasets[0].pointBackgroundColor = accentColor;
+                chart.data.datasets[0].pointBorderColor = primaryTextColor;
+                chart.update();
+            }
+        }
+
         function updateChart() {
             const canvas = document.getElementById("performanceChart");
             const ctx = canvas.getContext("2d");
@@ -847,8 +993,17 @@
             }
             
             const history = getHistory();
-            const labels = history.map(h => h.date);
+            const labels = history.map(h => {
+                const date = new Date(h.timestamp);
+                return `${date.getMonth() + 1}/${date.getDate()}`; // MM/DD format for chart labels
+            });
             const data = history.map(h => h.accuracy);
+
+            const rootStyles = getComputedStyle(document.documentElement);
+            const primaryTextColor = rootStyles.getPropertyValue('--primary-text-color');
+            const accentColor = rootStyles.getPropertyValue('--chart-line-color');
+            const chartFillColor = rootStyles.getPropertyValue('--chart-fill-color');
+            const gridColor = rootStyles.getPropertyValue('--panel-border');
             
             chart = new Chart(ctx, {
                 type: "line",
@@ -857,55 +1012,86 @@
                     datasets: [{
                         label: "Accuracy %",
                         data: data,
-                        borderColor: "#00ffff",
-                        backgroundColor: "rgba(0,255,255,0.1)",
+                        borderColor: accentColor,
+                        backgroundColor: chartFillColor,
                         borderWidth: 3,
                         fill: true,
                         tension: 0.4,
-                        pointBackgroundColor: "#00ffff",
-                        pointBorderColor: "#ffffff",
+                        pointBackgroundColor: accentColor,
+                        pointBorderColor: primaryTextColor,
                         pointBorderWidth: 2,
                         pointRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false, // Allow canvas to resize freely
                     plugins: {
                         legend: {
                             labels: {
-                                color: "#ffffff",
+                                color: primaryTextColor,
                                 font: {
-                                    family: "Orbitron",
+                                    family: "Montserrat",
+                                    size: 14
                                 },
                             },
                         },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += `${context.parsed.y}%`;
+                                    }
+                                    return label;
+                                },
+                                title: function(context) {
+                                    return `Date: ${history[context[0].dataIndex].date}\nShots: ${history[context[0].dataIndex].shots}\nHits: ${history[context[0].dataIndex].hits}`;
+                                }
+                            },
+                            titleFont: { family: 'Montserrat' },
+                            bodyFont: { family: 'Roboto' },
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: accentColor,
+                            borderWidth: 1,
+                            padding: 10
+                        }
                     },
                     scales: {
                         x: {
                             ticks: {
-                                color: "#ffffff",
+                                color: primaryTextColor,
                                 font: {
-                                    family: "Exo 2",
+                                    family: "Roboto",
+                                    size: 12
                                 },
                             },
                             grid: {
-                                color: "rgba(0,255,255,0.1)",
+                                color: gridColor,
+                                drawBorder: false,
                             },
                         },
                         y: {
                             min: 0,
                             max: 100,
                             ticks: {
-                                color: "#ffffff",
+                                color: primaryTextColor,
                                 font: {
-                                    family: "Exo 2",
+                                    family: "Roboto",
+                                    size: 12
                                 },
                                 callback: function(value) {
                                     return value + '%';
                                 }
                             },
                             grid: {
-                                color: "rgba(0,255,255,0.1)",
+                                color: gridColor,
+                                drawBorder: false,
                             },
                         },
                     },
