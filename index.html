@@ -759,6 +759,7 @@
         let recognition = null;
         let microphonePermission = false;
         let restartTimeout = null;
+        let isListening = false;
         
         // Chart variable
         let chart = null;
@@ -804,6 +805,15 @@
             }, 3000);
         }
 
+        function updateStatus(message, type = '') {
+            const statusDisplay = document.getElementById("statusDisplay");
+            statusDisplay.innerHTML = message;
+            statusDisplay.classList.remove('error', 'success');
+            if (type) {
+                statusDisplay.classList.add(type);
+            }
+        }
+
         async function requestMicrophonePermission() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -813,6 +823,9 @@
                 
                 // Stop the stream immediately after checking permission
                 stream.getTracks().forEach(track => track.stop());
+                
+                // Initialize speech recognition after permission is granted
+                initSpeechRecognition();
                 
                 setTimeout(() => {
                     if (!sessionActive) {
@@ -832,27 +845,13 @@
             }
         }
 
-        function startSession() {
-            const input = document.getElementById("targetShots").value;
-            if (!input || parseInt(input) <= 0 || parseInt(input) > 100) {
-                showError("Invalid puck count. Enter 1-100.");
+        function initSpeechRecognition() {
+            // Check if browser supports speech recognition
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                updateStatus("Voice recognition not supported in this browser", 'error');
                 return;
             }
 
-            targetShots = parseInt(input);
-            currentShots = 0;
-            hits = 0;
-            misses = 0;
-            sessionActive = true;
-            
-            document.getElementById("resultsDisplay").style.display = "none";
-            document.getElementById("sessionStats").style.display = "grid";
-            document.getElementById("puckCounter").textContent = `${currentShots} / ${targetShots}`;
-            
-            updateSessionStats();
-            updateStatus(`Training Active - Shot 1 of ${targetShots}`, 'success');
-            
-            // Check for microphone permission before starting voice recognition
-            if (!microphonePermission) {
-                document.getElementById("micPermissionPrompt").classList.add('show');
-            }
+            // Create recognition object
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
