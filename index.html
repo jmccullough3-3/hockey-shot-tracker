@@ -1,213 +1,917 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Hockey Shot Tracker</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Orbitron', sans-serif;
-      background: #0f0f0f;
-      color: #00ffcc;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-    }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-    .controls, #loginForm {
-      margin-bottom: 2rem;
-    }
-    button {
-      background: #00ffcc;
-      color: black;
-      border: none;
-      padding: 1rem 2rem;
-      margin: 0.5rem;
-      font-size: 1.2rem;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    input[type="number"], input[type="text"], input[type="password"] {
-      padding: 0.5rem;
-      font-size: 1rem;
-      border-radius: 5px;
-      border: none;
-      margin-right: 1rem;
-    }
-    #results {
-      font-size: 1.5rem;
-      margin-top: 1rem;
-    }
-    canvas {
-      margin-top: 2rem;
-      max-width: 90vw;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HockeyTech AI - Elite Training System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: #000;
+            color: #ffffff;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Three.js background canvas */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Animated grid overlay */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            background-image: 
+                linear-gradient(rgba(0,255,255,0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,255,0.3) 1px, transparent 1px);
+            background-size: 30px 30px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(30px, 30px); }
+        }
+
+        /* Glowing particles */
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: radial-gradient(circle, #00ffff, transparent);
+            border-radius: 50%;
+            animation: particleFloat 6s infinite ease-in-out;
+        }
+
+        @keyframes particleFloat {
+            0%, 100% { transform: translateY(0) scale(0.5); opacity: 0.3; }
+            50% { transform: translateY(-100px) scale(1); opacity: 1; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header with holographic effect */
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .logo {
+            font-family: 'Orbitron', monospace;
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: hologramShift 3s ease-in-out infinite;
+            text-shadow: 0 0 50px rgba(0,255,255,0.5);
+            position: relative;
+        }
+
+        @keyframes hologramShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .logo::after {
+            content: 'HOCKEYTECH AI';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(0,255,255,0.1), transparent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: hologramScan 4s linear infinite;
+        }
+
+        @keyframes hologramScan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #00ffff;
+            margin-top: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.8;
+        }
+
+        /* Login form with cyberpunk styling */
+        .login-panel {
+            background: linear-gradient(135deg, rgba(0,255,255,0.1), rgba(255,0,255,0.1));
+            border: 2px solid rgba(0,255,255,0.3);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,255,255,0.2);
+        }
+
+        .login-panel::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+            border-radius: 22px;
+            z-index: -1;
+            animation: borderGlow 3s linear infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .input-group {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .cyber-input {
+            width: 100%;
+            padding: 1.5rem;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid rgba(0,255,255,0.3);
+            border-radius: 10px;
+            color: #00ffff;
+            font-size: 1.1rem;
+            font-family: 'Orbitron', monospace;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .cyber-input:focus {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0,255,255,0.5);
+            transform: scale(1.02);
+        }
+
+        .cyber-input::placeholder {
+            color: rgba(0,255,255,0.5);
+        }
+
+        .cyber-btn {
+            background: linear-gradient(45deg, #00ffff, #0099cc);
+            border: none;
+            padding: 1.5rem 3rem;
+            border-radius: 10px;
+            color: #000;
+            font-size: 1.2rem;
+            font-weight: 600;
+            font-family: 'Orbitron', monospace;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cyber-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255,255,255,0.3), transparent);
+            transition: all 0.3s ease;
+            transform: translate(-50%, -50%);
+        }
+
+        .cyber-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .cyber-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0,255,255,0.4);
+        }
+
+        .cyber-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Main app interface */
+        .app-interface {
+            display: none;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .panel {
+            background: linear-gradient(135deg, rgba(0,255,255,0.1), rgba(255,0,255,0.1));
+            border: 2px solid rgba(0,255,255,0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            color: #00ffff;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .training-setup {
+            text-align: center;
+        }
+
+        .puck-counter {
+            font-size: 3rem;
+            font-family: 'Orbitron', monospace;
+            color: #00ffff;
+            margin: 1rem 0;
+            text-shadow: 0 0 20px rgba(0,255,255,0.5);
+        }
+
+        .status-display {
+            font-size: 1.5rem;
+            color: #ffff00;
+            margin-bottom: 2rem;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .session-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0,255,255,0.3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-family: 'Orbitron', monospace;
+            color: #00ffff;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .results-display {
+            background: linear-gradient(135deg, rgba(0,255,0,0.1), rgba(0,255,255,0.1));
+            border: 2px solid rgba(0,255,0,0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .accuracy-circle {
+            width: 200px;
+            height: 200px;
+            margin: 2rem auto;
+            position: relative;
+            border-radius: 50%;
+            background: conic-gradient(#00ff00 0deg, #00ff00 0deg, rgba(0,255,0,0.2) 0deg, rgba(0,255,0,0.2) 360deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: rotateAccuracy 2s ease-in-out;
+        }
+
+        @keyframes rotateAccuracy {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .accuracy-text {
+            font-size: 3rem;
+            font-family: 'Orbitron', monospace;
+            color: #00ff00;
+            font-weight: 900;
+        }
+
+        .chart-container {
+            background: rgba(0,0,0,0.7);
+            border: 2px solid rgba(0,255,255,0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .chart-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            color: #00ffff;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Voice recognition animation */
+        .voice-indicator {
+            width: 100px;
+            height: 100px;
+            margin: 2rem auto;
+            position: relative;
+            display: none;
+        }
+
+        .voice-wave {
+            position: absolute;
+            border: 2px solid #00ffff;
+            border-radius: 50%;
+            animation: voicePulse 2s infinite ease-in-out;
+        }
+
+        .voice-wave:nth-child(1) { animation-delay: 0s; }
+        .voice-wave:nth-child(2) { animation-delay: 0.5s; }
+        .voice-wave:nth-child(3) { animation-delay: 1s; }
+
+        @keyframes voicePulse {
+            0% {
+                width: 20px;
+                height: 20px;
+                top: 40px;
+                left: 40px;
+                opacity: 1;
+            }
+            100% {
+                width: 100px;
+                height: 100px;
+                top: 0;
+                left: 0;
+                opacity: 0;
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .control-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            .logo {
+                font-size: 2.5rem;
+            }
+            
+            .session-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Success animations */
+        .success-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            font-size: 4rem;
+            color: #00ff00;
+            animation: successPop 0.5s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes successPop {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .miss-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            font-size: 4rem;
+            color: #ff0000;
+            animation: missPop 0.5s ease-out;
+            pointer-events: none;
+        }
+
+        @keyframes missPop {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+    </style>
 </head>
 <body>
-  <h1>Hockey Shot Tracker</h1>
+    <canvas id="bg-canvas"></canvas>
+    
+    <div class="grid-overlay"></div>
 
-  <div id="loginForm">
-    <input type="text" id="username" placeholder="Username" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
-  </div>
+    <div class="container">
+        <div class="header">
+            <div class="logo">HOCKEYTECH AI</div>
+            <div class="subtitle">Elite Training System</div>
+        </div>
 
-  <div id="app" style="display: none;">
-    <div class="controls">
-      <input type="number" id="targetShots" placeholder="Number of pucks" min="1" />
-      <button onclick="startSession()">Start</button>
-      <button onclick="resetSession()">Reset</button>
+        <div id="loginPanel" class="login-panel">
+            <div class="panel-title" style="text-align: center; margin-bottom: 2rem;">ACCESS TERMINAL</div>
+            <div class="input-group">
+                <input type="text" id="username" class="cyber-input" placeholder="USERNAME" />
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" class="cyber-input" placeholder="PASSWORD" />
+            </div>
+            <div style="text-align: center;">
+                <button class="cyber-btn" onclick="login()">INITIALIZE SYSTEM</button>
+            </div>
+        </div>
+
+        <div id="appInterface" class="app-interface">
+            <div class="control-panel">
+                <div class="panel training-setup">
+                    <div class="panel-title">Training Protocol</div>
+                    <div class="input-group">
+                        <input type="number" id="targetShots" class="cyber-input" placeholder="PUCK COUNT" min="1" max="100" />
+                    </div>
+                    <div class="puck-counter" id="puckCounter">0</div>
+                    <div style="display: flex; gap: 1rem; justify-content: center;">
+                        <button class="cyber-btn" onclick="startSession()">START</button>
+                        <button class="cyber-btn" onclick="resetSession()">RESET</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-title">System Status</div>
+                    <div class="status-display" id="statusDisplay">
+                        System Ready - Initialize Training Protocol
+                    </div>
+                    <div class="voice-indicator" id="voiceIndicator">
+                        <div class="voice-wave"></div>
+                        <div class="voice-wave"></div>
+                        <div class="voice-wave"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="session-stats" id="sessionStats" style="display: none;">
+                <div class="stat-card">
+                    <span class="stat-number" id="hitsCount">0</span>
+                    <span class="stat-label">Hits</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="missesCount">0</span>
+                    <span class="stat-label">Misses</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="currentAccuracy">0%</span>
+                    <span class="stat-label">Accuracy</span>
+                </div>
+            </div>
+
+            <div class="results-display" id="resultsDisplay">
+                <div class="panel-title">Training Complete</div>
+                <div class="accuracy-circle" id="accuracyCircle">
+                    <div class="accuracy-text" id="accuracyText">0%</div>
+                </div>
+                <div id="finalStats" style="font-size: 1.5rem; color: #00ffff;"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">Performance Analytics</div>
+                <canvas id="performanceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
     </div>
-    <div id="status">Press Start and say "hit" or "miss".</div>
-    <div id="results"></div>
-    <canvas id="historyChart" width="400" height="200"></canvas>
-  </div>
 
-  <script>
-    const validUsers = ["jack", "callie"];
-    const validPassword = "hockey";
-    let currentUser = null;
+    <script>
+        // Three.js background setup
+        let scene, camera, renderer, particles;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            // Create particle system
+            const particleGeometry = new THREE.BufferGeometry();
+            const particleCount = 1000;
+            const positions = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 2000;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 2000;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 2000;
+            }
+            
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x00ffff,
+                size: 2,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+            
+            camera.position.z = 500;
+            
+            animate();
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (particles) {
+                particles.rotation.x += 0.001;
+                particles.rotation.y += 0.002;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Initialize Three.js background
+        initThreeJS();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
-    const login = () => {
-      const user = document.getElementById("username").value.toLowerCase();
-      const pass = document.getElementById("password").value;
-      if (validUsers.includes(user) && pass === validPassword) {
-        currentUser = user;
-        document.getElementById("loginForm").style.display = "none";
-        document.getElementById("app").style.display = "block";
-        drawChart();
-      } else {
-        alert("Invalid login");
-      }
-    };
+        // App logic
+        // Updated valid users and password
+        const validUsers = ["jack", "callie"];
+        const validPassword = "hockey";
+        let currentUser = null;
+        let targetShots = 0;
+        let currentShots = 0;
+        let hits = 0;
+        let misses = 0;
+        let sessionActive = false;
+        let recognition = null;
+        let chart = null;
 
-    let targetShots = 0;
-    let currentShots = 0;
-    let hits = 0;
-    let sessionActive = false;
-    let recognition = null;
+        function login() {
+            const user = document.getElementById("username").value.toLowerCase();
+            const pass = document.getElementById("password").value;
+            
+            if (validUsers.includes(user) && pass === validPassword) {
+                currentUser = user;
+                document.getElementById("loginPanel").style.display = "none";
+                document.getElementById("appInterface").style.display = "block";
+                updateChart();
+                showWelcomeMessage();
+            } else {
+                showError("ACCESS DENIED - Invalid Credentials");
+            }
+        }
 
-    const getHistory = () => {
-      const all = JSON.parse(localStorage.getItem("hockeyShotHistory") || "{}");
-      return all[currentUser] || [];
-    };
+        function showWelcomeMessage() {
+            const statusDisplay = document.getElementById("statusDisplay");
+            statusDisplay.innerHTML = `Welcome, ${currentUser.toUpperCase()}. System initialized.`;
+            statusDisplay.style.color = "#00ff00";
+            
+            setTimeout(() => {
+                statusDisplay.innerHTML = "System Ready - Initialize Training Protocol";
+                statusDisplay.style.color = "#ffff00";
+            }, 3000);
+        }
 
-    const saveHistory = (data) => {
-      const all = JSON.parse(localStorage.getItem("hockeyShotHistory") || "{}");
-      if (!all[currentUser]) all[currentUser] = [];
-      all[currentUser].push(data);
-      localStorage.setItem("hockeyShotHistory", JSON.stringify(all));
-    };
+        function showError(message) {
+            const statusDisplay = document.getElementById("statusDisplay");
+            statusDisplay.innerHTML = message;
+            statusDisplay.style.color = "#ff0000";
+            
+            setTimeout(() => {
+                statusDisplay.innerHTML = "System Ready - Initialize Training Protocol";
+                statusDisplay.style.color = "#ffff00";
+            }, 3000);
+        }
 
-    const statusEl = document.getElementById("status");
-    const resultsEl = document.getElementById("results");
+        function startSession() {
+            const input = document.getElementById("targetShots").value;
+            if (!input || input <= 0 || input > 100) {
+                showError("Invalid puck count. Enter 1-100.");
+                return;
+            }
 
-    const startSession = () => {
-      const input = document.getElementById("targetShots").value;
-      if (!input || input <= 0) return alert("Enter valid shot count.");
+            targetShots = parseInt(input);
+            currentShots = 0;
+            hits = 0;
+            misses = 0;
+            sessionActive = true;
+            
+            document.getElementById("resultsDisplay").style.display = "none";
+            document.getElementById("sessionStats").style.display = "grid";
+            document.getElementById("puckCounter").textContent = targetShots;
+            
+            updateSessionStats();
+            updateStatus(`Training Active - Shot 1 of ${targetShots}`, "#00ff00");
+            startVoiceRecognition();
+        }
 
-      targetShots = parseInt(input);
-      currentShots = 0;
-      hits = 0;
-      sessionActive = true;
-      resultsEl.innerHTML = "";
-      statusEl.innerText = `Listening... Shot 1 of ${targetShots}`;
-      startListening();
-    };
+        function resetSession() {
+            sessionActive = false;
+            targetShots = 0;
+            currentShots = 0;
+            hits = 0;
+            misses = 0;
+            
+            if (recognition) {
+                recognition.stop();
+            }
+            
+            document.getElementById("resultsDisplay").style.display = "none";
+            document.getElementById("sessionStats").style.display = "none";
+            document.getElementById("voiceIndicator").style.display = "none";
+            document.getElementById("puckCounter").textContent = "0";
+            
+            updateStatus("System Ready - Initialize Training Protocol", "#ffff00");
+        }
 
-    const resetSession = () => {
-      sessionActive = false;
-      targetShots = 0;
-      currentShots = 0;
-      hits = 0;
-      resultsEl.innerHTML = "";
-      statusEl.innerText = 'Press Start and say "hit" or "miss".';
-      if (recognition) recognition.stop();
-    };
+        function updateStatus(message, color = "#ffff00") {
+            const statusDisplay = document.getElementById("statusDisplay");
+            statusDisplay.innerHTML = message;
+            statusDisplay.style.color = color;
+        }
 
-    const recordResult = (word) => {
-      if (!sessionActive || currentShots >= targetShots) return;
-      if (word.includes("hit")) hits++;
-      currentShots++;
-      if (currentShots >= targetShots) {
-        endSession();
-      } else {
-        statusEl.innerText = `Listening... Shot ${currentShots + 1} of ${targetShots}`;
-      }
-    };
+        function updateSessionStats() {
+            document.getElementById("hitsCount").textContent = hits;
+            document.getElementById("missesCount").textContent = misses;
+            const accuracy = currentShots > 0 ? Math.round((hits / currentShots) * 100) : 0;
+            document.getElementById("currentAccuracy").textContent = `${accuracy}%`;
+        }
 
-    const endSession = () => {
-      sessionActive = false;
-      if (recognition) recognition.stop();
-      const percent = ((hits / targetShots) * 100).toFixed(1);
-      resultsEl.innerText = `You hit ${hits} out of ${targetShots} shots (${percent}%)`;
-      saveHistory({ date: new Date().toLocaleDateString(), percent: parseFloat(percent) });
-      drawChart();
-    };
+        function recordResult(isHit) {
+            if (!sessionActive || currentShots >= targetShots) return;
+            
+            currentShots++;
+            if (isHit) {
+                hits++;
+                showHitAnimation();
+            } else {
+                misses++;
+                showMissAnimation();
+            }
+            
+            updateSessionStats();
+            
+            if (currentShots >= targetShots) {
+                endSession();
+            } else {
+                updateStatus(`Training Active - Shot ${currentShots + 1} of ${targetShots}`, "#00ff00");
+            }
+        }
 
-    const startListening = () => {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Speech Recognition not supported in this browser.");
-        return;
-      }
+        function showHitAnimation() {
+            const animation = document.createElement('div');
+            animation.className = 'success-animation';
+            animation.textContent = 'HIT! 🎯';
+            document.body.appendChild(animation);
+            
+            setTimeout(() => {
+                document.body.removeChild(animation);
+            }, 500);
+        }
 
-      recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.continuous = true;
-      recognition.interimResults = false;
+        function showMissAnimation() {
+            const animation = document.createElement('div');
+            animation.className = 'miss-animation';
+            animation.textContent = 'MISS ❌';
+            document.body.appendChild(animation);
+            
+            setTimeout(() => {
+                document.body.removeChild(animation);
+            }, 500);
+        }
 
-      recognition.onresult = (event) => {
-        const last = event.results.length - 1;
-        const transcript = event.results[last][0].transcript.trim().toLowerCase();
-        console.log("Heard:", transcript);
-        recordResult(transcript);
-      };
+        function endSession() {
+            sessionActive = false;
+            if (recognition) {
+                recognition.stop();
+            }
+            
+            document.getElementById("voiceIndicator").style.display = "none";
+            
+            const accuracy = Math.round((hits / targetShots) * 100);
+            
+            // Update accuracy circle
+            const accuracyCircle = document.getElementById("accuracyCircle");
+            const accuracyText = document.getElementById("accuracyText");
+            const finalStats = document.getElementById("finalStats");
+            
+            accuracyText.textContent = `${accuracy}%`;
+            finalStats.innerHTML = `${hits} HITS / ${targetShots} SHOTS<br>Training Session Complete`;
+            
+            // Animate accuracy circle
+            const degree = (accuracy / 100) * 360;
+            accuracyCircle.style.background = `conic-gradient(#00ff00 0deg, #00ff00 ${degree}deg, rgba(0,255,0,0.2) ${degree}deg, rgba(0,255,0,0.2) 360deg)`;
+            
+            document.getElementById("resultsDisplay").style.display = "block";
+            updateStatus("Training Complete - Session Data Recorded", "#00ff00");
+            
+            // Save to history
+            saveToHistory(accuracy);
+            updateChart();
+        }
 
-      recognition.start();
-    };
+        function startVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showError("Voice recognition not supported in this browser.");
+                return;
+            }
 
-    const drawChart = () => {
-      const canvas = document.getElementById("historyChart");
-      if (!canvas || !currentUser) return;
-      const ctx = canvas.getContext("2d");
-      const historyData = getHistory();
-      const labels = historyData.map((h) => h.date);
-      const data = historyData.map((h) => h.percent);
+            recognition = new SpeechRecognition();
+            recognition.lang = "en-US";
+            recognition.continuous = true;
+            recognition.interimResults = false;
 
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "Shooting % Over Time",
-            data: data,
-            borderColor: "#00ffcc",
-            backgroundColor: "rgba(0,255,204,0.1)",
-            tension: 0.3,
-            pointRadius: 5,
-            fill: true,
-          }],
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-            },
-          },
-        },
-      });
-    };
-  </script>
+            recognition.onstart = () => {
+                document.getElementById("voiceIndicator").style.display = "block";
+            };
+
+            recognition.onresult = (event) => {
+                const lastResult = event.results[event.results.length - 1];
+                const transcript = lastResult[0].transcript.trim().toLowerCase();
+                
+                if (transcript.includes("hit")) {
+                    recordResult(true);
+                } else if (transcript.includes("miss")) {
+                    recordResult(false);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+            };
+
+            recognition.start();
+        }
+
+        function getHistory() {
+            const allHistory = JSON.parse(localStorage.getItem("hockeyTechHistory") || "{}");
+            return allHistory[currentUser] || [];
+        }
+
+        function saveToHistory(accuracy) {
+            const allHistory = JSON.parse(localStorage.getItem("hockeyTechHistory") || "{}");
+            if (!allHistory[currentUser]) {
+                allHistory[currentUser] = [];
+            }
+            
+            allHistory[currentUser].push({
+                date: new Date().toLocaleDateString(),
+                accuracy: accuracy,
+                hits: hits,
+                shots: targetShots,
+                timestamp: Date.now()
+            });
+            
+            localStorage.setItem("hockeyTechHistory", JSON.stringify(allHistory));
+        }
+
+        function updateChart() {
+            const canvas = document.getElementById("performanceChart");
+            const ctx = canvas.getContext("2d");
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            const history = getHistory();
+            const labels = history.map(h => h.date);
+            const data = history.map(h => h.accuracy);
+            
+            chart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Accuracy %",
+                        data: data,
+                        borderColor: "#00ffff",
+                        backgroundColor: "rgba(0,255,255,0.1)",
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: "#00ffff",
+                        pointBorderColor: "#ffffff",
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#ffffff",
+                                font: {
+                                    family: "Orbitron",
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: "#ffffff",
+                                font: {
+                                    family: "Exo 2",
+                                },
+                            },
+                            grid: {
+                                color: "rgba(0,255,255,0.1)",
+                            },
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                color: "#ffffff",
+                                font: {
+                                    family: "Exo 2",
+                                },
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            grid: {
+                                color: "rgba(0,255,255,0.1)",
+                            },
+                        },
+                    },
+                },
+            });
+        }
+    </script>
 </body>
 </html>
