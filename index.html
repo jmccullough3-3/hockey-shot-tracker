@@ -3,38 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HockeyTech AI - Shooting Accuracy Tool</title>
+    <title>HockeyTech - Shooting Accuracy Tool</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Base styles for Dark Mode (Navy & Black) */
         :root {
-            --bg-color: #0A192F; /* Dark Navy */
+            --bg-color: #050B14; /* Very Dark, almost Black Navy */
             --primary-text-color: #E6F1FF; /* Light Blue/White */
             --secondary-text-color: #8892B0; /* Muted Grey-Blue */
-            --accent-color: #64FFDA; /* Bright Cyan */
-            --panel-bg: rgba(17, 34, 64, 0.8); /* Darker Navy with transparency */
-            --panel-border: #2A4064; /* Slightly lighter navy for borders */
-            --input-bg: rgba(0, 0, 0, 0.5);
-            --input-border: #4A608F;
+            --accent-color: #007BFF; /* Bright Blue (replaces green) */
+            --panel-bg: rgba(10, 20, 30, 0.85); /* Darker Navy with more black and transparency */
+            --panel-border: #1A304A; /* Slightly lighter navy for borders */
+            --input-bg: rgba(0, 0, 0, 0.6);
+            --input-border: #3A4F70;
             --button-gradient-start: #0056B3; /* Darker Blue */
             --button-gradient-end: #007BFF; /* Brighter Blue */
-            --shadow-color: rgba(0, 0, 0, 0.3);
-            --glow-color: #64FFDA; /* Matching accent for glows */
-            --success-color: #00BF63; /* Green */
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --glow-color: #007BFF; /* Matching accent for glows */
+            --success-color: #28A745; /* Green */
             --error-color: #DC3545; /* Red */
-            --chart-line-color: #64FFDA;
-            --chart-fill-color: rgba(100, 255, 218, 0.1);
+            --chart-line-color: #007BFF;
+            --chart-fill-color: rgba(0, 123, 255, 0.15);
         }
 
         /* Light Mode styles */
         body.light-mode {
-            --bg-color: #F8F8F8; /* Off-White */
+            --bg-color: #FFFFFF; /* Pure White */
             --primary-text-color: #333333; /* Dark Grey */
             --secondary-text-color: #666666; /* Medium Grey */
             --accent-color: #007BFF; /* Bright Blue */
-            --panel-bg: rgba(255, 255, 255, 0.9);
+            --panel-bg: rgba(245, 245, 245, 0.9); /* Off-white with transparency */
             --panel-border: #DDDDDD;
             --input-bg: rgba(255, 255, 255, 0.8);
             --input-border: #AAAAAA;
@@ -259,7 +259,7 @@
 
         .cyber-input:focus {
             border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(100,255,218,0.4); /* Accent glow */
+            box-shadow: 0 0 15px rgba(0,123,255,0.4); /* Accent glow */
             transform: translateY(-2px); /* Slight lift */
         }
 
@@ -537,6 +537,20 @@
             50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 0; /* Fade out at end */ }
         }
+
+        /* Hit/Miss Buttons for manual input */
+        .manual-input-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+        .manual-input-buttons .cyber-btn {
+            flex: 1;
+            padding: 0.8rem 1.5rem; /* Slightly smaller buttons */
+            font-size: 0.95rem;
+        }
+
     </style>
 </head>
 <body>
@@ -552,7 +566,7 @@
         </label>
 
         <div class="header">
-            <div class="logo">HOCKEYTECH AI</div>
+            <div class="logo">HOCKEYTECH</div>
             <div class="subtitle">SHOOTING ACCURACY TOOL</div>
         </div>
 
@@ -580,6 +594,10 @@
                     <div style="display: flex; gap: 1rem; justify-content: center;">
                         <button class="cyber-btn" onclick="startSession()">START</button>
                         <button class="cyber-btn" onclick="resetSession()">RESET</button>
+                    </div>
+                    <div class="manual-input-buttons">
+                        <button class="cyber-btn" onclick="recordResult(true)">HIT</button>
+                        <button class="cyber-btn" onclick="recordResult(false)">MISS</button>
                     </div>
                 </div>
 
@@ -650,7 +668,7 @@
             particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             
             const particleMaterial = new THREE.PointsMaterial({
-                color: 0x64FFDA, // Initial accent color for particles
+                color: 0x007BFF, // Initial accent color for particles (blue)
                 size: 2,
                 transparent: true,
                 opacity: 0.6
@@ -692,6 +710,7 @@
             localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
             updateChartColors();
             updateParticleColor();
+            updateAccuracyCircleGradient(); // Update accuracy circle colors on theme switch
         }
 
         // Apply saved theme on load
@@ -703,15 +722,15 @@
             }
             updateChartColors(); // Ensure chart colors match on load
             updateParticleColor();
+            updateAccuracyCircleGradient(); // Ensure accuracy circle colors match on load
         });
 
         function updateParticleColor() {
             if (particles && particles.material) {
                 const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
-                particles.material.color.set(accentColor);
+                particles.material.color.set(new THREE.Color(accentColor));
             }
         }
-
 
         // App logic
         const validUsers = ["jack", "callie"];
@@ -782,7 +801,7 @@
             
             updateSessionStats();
             updateStatus(`Training Active - Shot 1 of ${targetShots}`, 'success');
-            startVoiceRecognition();
+            startVoiceRecognition(); // Attempt to start voice recognition
         }
 
         function resetSession() {
@@ -796,9 +815,9 @@
                 recognition.stop();
             }
             
+            document.getElementById("voiceIndicator").style.display = "none";
             document.getElementById("resultsDisplay").style.display = "none";
             document.getElementById("sessionStats").style.display = "none";
-            document.getElementById("voiceIndicator").style.display = "none";
             document.getElementById("puckCounter").textContent = "0";
             document.getElementById("targetShots").value = ""; // Clear input
             
@@ -814,15 +833,11 @@
             }
         }
 
-        function updateSessionStats() {
-            document.getElementById("hitsCount").textContent = hits;
-            document.getElementById("missesCount").textContent = misses;
-            const accuracy = currentShots > 0 ? Math.round((hits / currentShots) * 100) : 0;
-            document.getElementById("currentAccuracy").textContent = `${accuracy}%`;
-        }
-
         function recordResult(isHit) {
-            if (!sessionActive || currentShots >= targetShots) return;
+            if (!sessionActive || currentShots >= targetShots) {
+                showError("Session not active or target shots reached.");
+                return;
+            }
             
             currentShots++;
             if (isHit) {
@@ -872,15 +887,9 @@
             accuracyText.textContent = `${accuracy}%`;
             finalStats.innerHTML = `${hits} HITS / ${targetShots} SHOTS<br>Training Session Complete`;
             
-            // Animate accuracy circle - this uses the ::before pseudo-element for the gradient
-            const degree = (accuracy / 100) * 360;
-            const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success-color');
-            
-            // Update the conic-gradient of the ::before pseudo-element
-            // This requires modifying the style sheet or a more complex approach.
-            // For simplicity and direct control, we'll update the background directly on the element.
-            accuracyCircle.style.background = `conic-gradient(${successColor} 0deg, ${successColor} ${degree}deg, rgba(0,0,0,0.2) ${degree}deg, rgba(0,0,0,0.2) 360deg)`;
-            accuracyCircle.querySelector('.accuracy-text').style.color = successColor; // Ensure text color is success
+            // This now calls a dedicated function to update the gradient, which correctly uses a pseudo-element
+            updateAccuracyCircleGradient(accuracy);
+            accuracyCircle.querySelector('.accuracy-text').style.color = getComputedStyle(document.documentElement).getPropertyValue('--success-color'); // Ensure text color is success
             
             document.getElementById("resultsDisplay").style.display = "block";
             updateStatus("Training Complete - Session Data Recorded", 'success');
@@ -889,6 +898,18 @@
             saveToHistory(accuracy);
             updateChart();
         }
+
+        function updateAccuracyCircleGradient(accuracy = 0) {
+            const accuracyCircle = document.getElementById("accuracyCircle");
+            const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success-color');
+            const degree = (accuracy / 100) * 360;
+
+            // To dynamically update a pseudo-element's background, we inject a style tag or update a CSS rule.
+            // A simpler approach for dynamic conic-gradient is to apply it directly to the element's background.
+            // The existing CSS for ::before acts as a fallback/initial style.
+            accuracyCircle.style.background = `conic-gradient(${successColor} 0deg, ${successColor} ${degree}deg, rgba(0,0,0,0.2) ${degree}deg, rgba(0,0,0,0.2) 360deg)`;
+        }
+
 
         function startVoiceRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -904,6 +925,7 @@
 
             recognition.onstart = () => {
                 document.getElementById("voiceIndicator").style.display = "block";
+                updateStatus("Listening for 'HIT' or 'MISS'...", 'success');
             };
 
             recognition.onresult = (event) => {
@@ -919,24 +941,48 @@
 
             recognition.onerror = (event) => {
                 console.error("Speech recognition error:", event.error);
-                if (event.error === 'not-allowed') {
+                document.getElementById("voiceIndicator").style.display = "none";
+                if (event.error === 'not-allowed' || event.error === 'permission-denied') {
                     showError("Microphone access denied. Please enable in browser settings.");
                 } else if (event.error === 'no-speech') {
-                    // This often happens if there's a pause, recognition auto-stops
-                    // We can choose to restart it or just let it be. For continuous, it often restarts.
+                    updateStatus("No speech detected. Still listening...", 'secondary'); // Keep listening without showing error
+                } else {
+                    showError("Voice recognition error. Please try again.");
                 }
             };
 
             recognition.onend = () => {
                 // Restart recognition if session is active (for continuous recognition)
-                if (sessionActive && recognition) {
-                    recognition.start();
+                if (sessionActive) {
+                    // Small delay before restarting to prevent rapid restart loops on brief pauses
+                    setTimeout(() => {
+                        if (sessionActive) { // Double check if session is still active after delay
+                            recognition.start();
+                        }
+                    }, 500); 
                 } else {
                     document.getElementById("voiceIndicator").style.display = "none";
                 }
             };
 
-            recognition.start();
+            // Request microphone permission when trying to start
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function(stream) {
+                    // Permissions granted, start recognition
+                    if (sessionActive) { // Ensure session is still active before starting
+                        recognition.start();
+                    }
+                    // Immediately stop the stream after checking, we don't need to actually play it
+                    stream.getTracks().forEach(track => track.stop());
+                })
+                .catch(function(err) {
+                    console.error("Microphone access denied:", err);
+                    showError("Microphone access required for voice input. Please allow permissions.");
+                    document.getElementById("voiceIndicator").style.display = "none";
+                    if (sessionActive) {
+                        updateStatus("Microphone access denied. Use HIT/MISS buttons.", 'error');
+                    }
+                });
         }
 
         function getHistory() {
