@@ -524,20 +524,16 @@
     </style>
 </head>
 <body>
-    <!-- Three.js Background Canvas -->
     <canvas id="bg-canvas"></canvas>
     
-    <!-- Animated Grid Overlay -->
     <div class="grid-overlay"></div>
 
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <div class="logo">HOCKEYTECH</div>
             <div class="subtitle">SHOOTING ACCURACY TOOL</div>
         </div>
 
-        <!-- Login Panel -->
         <div id="loginPanel" class="login-panel">
             <div class="panel-title" style="text-align: center; margin-bottom: 2rem;">ACCESS TERMINAL</div>
             <div class="input-group">
@@ -551,17 +547,14 @@
             </div>
         </div>
 
-        <!-- Main App Interface -->
         <div id="appInterface" class="app-interface">
             <div class="control-panel">
-                <!-- Training Setup -->
                 <div class="panel training-setup">
                     <div class="panel-title">Training Protocol</div>
                     <div class="input-group">
                         <input type="number" id="targetShots" class="cyber-input" placeholder="PUCK COUNT" min="1" max="100" />
                     </div>
-                    <div class="puck-counter" id="puckCounter">0 / 0</div> <!-- Updated initial display -->
-                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <div class="puck-counter" id="puckCounter">0 / 0</div> <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
                         <button class="cyber-btn" onclick="startSession()">START</button>
                         <button class="cyber-btn" onclick="resetSession()">RESET</button>
                     </div>
@@ -571,7 +564,6 @@
                     </div>
                 </div>
 
-                <!-- Status Panel -->
                 <div class="panel">
                     <div class="panel-title">System Status</div>
                     <div class="status-display" id="statusDisplay">
@@ -585,7 +577,6 @@
                 </div>
             </div>
 
-            <!-- Session Stats -->
             <div class="session-stats" id="sessionStats" style="display: none;">
                 <div class="stat-card">
                     <span class="stat-number" id="hitsCount">0</span>
@@ -601,7 +592,6 @@
                 </div>
             </div>
 
-            <!-- Results Display -->
             <div class="results-display" id="resultsDisplay">
                 <div class="panel-title">Training Complete</div>
                 <div class="accuracy-circle" id="accuracyCircle">
@@ -610,7 +600,6 @@
                 <div id="finalStats" style="font-size: 1.3rem; color: var(--primary-text-color);"></div>
             </div>
 
-            <!-- Performance Chart -->
             <div class="chart-container">
                 <div class="chart-title">Performance Analytics</div>
                 <canvas id="performanceChart"></canvas>
@@ -763,6 +752,7 @@
             
             if (recognition) {
                 recognition.stop();
+                recognition = null; // Clear recognition instance
             }
             
             document.getElementById("voiceIndicator").style.display = "none";
@@ -831,6 +821,7 @@
             sessionActive = false;
             if (recognition) {
                 recognition.stop();
+                recognition = null; // Clear recognition instance
             }
             
             document.getElementById("voiceIndicator").style.display = "none";
@@ -869,6 +860,12 @@
                 return;
             }
 
+            // If a recognition instance already exists and is active, stop it before creating a new one
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+            }
+
             recognition = new SpeechRecognition();
             recognition.lang = "en-US";
             recognition.continuous = true;
@@ -892,35 +889,41 @@
 
             recognition.onerror = (event) => {
                 console.error("Speech recognition error:", event.error);
-                document.getElementById("voiceIndicator").style.display = "none";
+                document.getElementById("voiceIndicator").style.display = "none"; // Hide indicator on error
                 if (event.error === 'not-allowed' || event.error === 'permission-denied') {
                     showError("Microphone access denied. Please enable in browser settings or use HIT/MISS buttons.");
                 } else if (event.error === 'no-speech') {
-                    updateStatus("No speech detected. Still listening (or use buttons)...", 'secondary'); 
+                    // This is the common case: no speech detected after a period of silence.
+                    // The onend event will follow this and restart if sessionActive.
+                    updateStatus("No speech detected. Re-listening. Use HIT/MISS buttons if preferred.", 'secondary'); 
                 } else {
-                    showError("Voice recognition error. Please try again or use HIT/MISS buttons.");
+                    showError(`Voice recognition error: ${event.error}. Please try again or use HIT/MISS buttons.`);
                 }
             };
 
             recognition.onend = () => {
+                // If the session is still active, try to restart recognition after a short delay
                 if (sessionActive) {
                     setTimeout(() => {
-                        if (sessionActive) { 
+                        if (sessionActive && recognition) { // Double check session is still active AND recognition object exists
                             recognition.start();
+                            // Re-display voice indicator as recognition is restarting
+                            document.getElementById("voiceIndicator").style.display = "block"; 
                         }
-                    }, 500); 
+                    }, 700); // Increased delay slightly to 700ms for more robustness
                 } else {
-                    document.getElementById("voiceIndicator").style.display = "none";
+                    document.getElementById("voiceIndicator").style.display = "none"; // Hide indicator if session ended
                 }
             };
 
             // Request microphone permission when trying to start
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(function(stream) {
-                    if (sessionActive) { 
+                    // We successfully got permission, now start recognition if session is active
+                    if (sessionActive && !recognition.running) { // Check if not already running to avoid errors
                         recognition.start();
                     }
-                    stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately
+                    stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately after checking permission
                 })
                 .catch(function(err) {
                     console.error("Microphone access denied:", err);
