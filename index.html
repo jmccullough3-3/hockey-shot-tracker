@@ -1,857 +1,1101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HockeyTech - Shooting Accuracy Tool</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* Base styles for Dark Mode (Navy & Black) */
-        :root {
-            --bg-color: #050B14;
-            --primary-text-color: #E6F1FF;
-            --secondary-text-color: #8892B0;
-            --accent-color: #007BFF;
-            --panel-bg: rgba(10, 20, 30, 0.85);
-            --panel-border: #1A304A;
-            --input-bg: rgba(0, 0, 0, 0.6);
-            --input-border: #3A4F70;
-            --button-gradient-start: #0056B3;
-            --button-gradient-end: #007BFF;
-            --shadow-color: rgba(0, 0, 0, 0.4);
-            --glow-color: #007BFF;
-            --success-color: #28A745;
-            --error-color: #DC3545;
-            --chart-line-color: #007BFF;
-            --chart-fill-color: rgba(0, 123, 255, 0.15);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HockeyTech - Shooting Accuracy Tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* Base styles for Dark Mode (Navy & Black) */
+:root {
+--bg-color: #050B14; /* Very Dark, almost Black Navy */
+--primary-text-color: #E6F1FF; /* Light Blue/White */
+--secondary-text-color: #8892B0; /* Muted Grey-Blue */
+--accent-color: #007BFF; /* Bright Blue */
+--panel-bg: rgba(10, 20, 30, 0.85); /* Darker Navy with more black and transparency */
+--panel-border: #1A304A; /* Slightly lighter navy for borders */
+--input-bg: rgba(0, 0, 0, 0.6);
+--input-border: #3A4F70;
+--button-gradient-start: #0056B3; /* Darker Blue */
+--button-gradient-end: #007BFF; /* Brighter Blue */
+--shadow-color: rgba(0, 0, 0, 0.4);
+--glow-color: #007BFF; /* Matching accent for glows */
+--success-color: #28A745; /* Green */
+--error-color: #DC3545; /* Red */
+--chart-line-color: #007BFF;
+--chart-fill-color: rgba(0, 123, 255, 0.15);
+}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
 
-        body {
-            font-family: 'Roboto', sans-serif;
-            background: var(--bg-color);
-            color: var(--primary-text-color);
-            overflow-x: hidden;
-            position: relative;
-            min-height: 100vh;
-            transition: background 0.5s ease, color 0.5s ease;
-        }
+body {
+font-family: 'Roboto', sans-serif;
+background: var(--bg-color);
+color: var(--primary-text-color);
+overflow-x: hidden;
+position: relative;
+min-height: 100vh;
+transition: background 0.5s ease, color 0.5s ease;
+}
 
-        /* Three.js background canvas */
-        #bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            transition: opacity 0.5s ease;
-        }
-        
-        /* Animated grid overlay */
-        .grid-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0.05;
-            background-image: 
-                linear-gradient(var(--accent-color) 1px, transparent 1px),
-                linear-gradient(90deg, var(--accent-color) 1px, transparent 1px);
-            background-size: 30px 30px;
-            animation: gridMove 20s linear infinite;
-            pointer-events: none;
-            z-index: 1;
-            transition: background-image 0.5s ease, opacity 0.5s ease;
-        }
+/* Three.js background canvas */
+#bg-canvas {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+z-index: -1;
+transition: opacity 0.5s ease;
+}
 
-        @keyframes gridMove {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(30px, 30px); }
-        }
+/* Animated grid overlay */
+.grid-overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+opacity: 0.05;
+background-image:
+linear-gradient(var(--accent-color) 1px, transparent 1px),
+linear-gradient(90deg, var(--accent-color) 1px, transparent 1px);
+background-size: 30px 30px;
+animation: gridMove 20s linear infinite;
+pointer-events: none;
+z-index: 1;
+transition: background-image 0.5s ease, opacity 0.5s ease;
+}
 
-        /* Glowing particles */
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: radial-gradient(circle, var(--accent-color), transparent);
-            border-radius: 50%;
-            animation: particleFloat 6s infinite ease-in-out;
-            opacity: 0.6;
-        }
+@keyframes gridMove {
+0% { transform: translate(0, 0); }
+100% { transform: translate(30px, 30px); }
+}
 
-        @keyframes particleFloat {
-            0%, 100% { transform: translateY(0) scale(0.5); opacity: 0.3; }
-            50% { transform: translateY(-100px) scale(1); opacity: 0.8; }
-        }
+/* Glowing particles (Adjusted for subtlety) */
+.particle {
+position: absolute;
+width: 2px;
+height: 2px;
+background: radial-gradient(circle, var(--accent-color), transparent);
+border-radius: 50%;
+animation: particleFloat 6s infinite ease-in-out;
+opacity: 0.6;
+}
 
-        .container {
-            position: relative;
-            z-index: 10;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1rem;
-        }
+@keyframes particleFloat {
+0%, 100% { transform: translateY(0) scale(0.5); opacity: 0.3; }
+50% { transform: translateY(-100px) scale(1); opacity: 0.8; }
+}
 
-        /* Header */
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-            position: relative;
-        }
+.container {
+position: relative;
+z-index: 10;
+max-width: 1200px;
+margin: 0 auto;
+padding: 2rem;
+}
 
-        .logo {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 900;
-            background: linear-gradient(45deg, var(--accent-color), #FFFFFF, var(--accent-color));
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: modernGradientShift 5s ease-in-out infinite;
-            text-shadow: 0 0 20px var(--glow-color);
-            position: relative;
-        }
+/* Header */
+.header {
+text-align: center;
+margin-bottom: 4rem;
+position: relative;
+}
 
-        @keyframes modernGradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
+.logo {
+font-family: 'Montserrat', sans-serif;
+font-size: 3.5rem;
+font-weight: 900;
+background: linear-gradient(45deg, var(--accent-color), #FFFFFF, var(--accent-color)); /* More modern gradient */
+background-size: 300% 300%;
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+background-clip: text;
+animation: modernGradientShift 5s ease-in-out infinite;
+text-shadow: 0 0 20px var(--glow-color); /* Softer glow */
+position: relative;
+}
 
-        .subtitle {
-            font-family: 'Roboto', sans-serif;
-            font-size: 0.9rem;
-            color: var(--secondary-text-color);
-            margin-top: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            opacity: 0.9;
-        }
 
-        /* Login form with modern styling */
-        .login-panel, .panel {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            padding: 2rem;
-            max-width: 500px;
-            margin: 0 auto;
-            position: relative;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 10px 20px var(--shadow-color);
-            transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
-        }
+@keyframes modernGradientShift {
+0%, 100% { background-position: 0% 50%; }
+50% { background-position: 100% 50%; }
+}
 
-        .panel-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.2rem;
-            color: var(--accent-color);
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 700;
-            text-align: center;
-            transition: color 0.5s ease;
-        }
+.subtitle {
+font-family: 'Roboto', sans-serif;
+font-size: 1.1rem;
+color: var(--secondary-text-color);
+margin-top: 0.8rem;
+text-transform: uppercase;
+letter-spacing: 2px;
+opacity: 0.9;
+}
 
-        .input-group {
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
+/* Login form with modern styling */
+.login-panel, .panel {
+background: var(--panel-bg);
+border: 1px solid var(--panel-border);
+border-radius: 12px; /* Softer corners */
+padding: 2.5rem;
+max-width: 500px;
+margin: 0 auto;
+position: relative;
+backdrop-filter: blur(8px); /* Slightly less blur */
+box-shadow: 0 10px 20px var(--shadow-color); /* Subtler shadow */
+transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+}
 
-        .cyber-input {
-            width: 100%;
-            padding: 1rem 1.2rem;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
-            color: var(--primary-text-color);
-            font-size: 1rem;
-            font-family: 'Roboto', sans-serif;
-            transition: all 0.3s ease;
-            outline: none;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-        }
+.panel-title {
+font-family: 'Montserrat', sans-serif;
+font-size: 1.3rem;
+color: var(--accent-color);
+margin-bottom: 1.5rem;
+text-transform: uppercase;
+letter-spacing: 1.5px;
+font-weight: 700;
+text-align: center;
+transition: color 0.5s ease;
+}
 
-        .cyber-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 15px rgba(0,123,255,0.4);
-            transform: translateY(-2px);
-        }
+.input-group {
+margin-bottom: 1.8rem;
+position: relative;
+}
 
-        .cyber-input::placeholder {
-            color: var(--secondary-text-color);
-            opacity: 0.7;
-        }
+.cyber-input {
+width: 100%;
+padding: 1.2rem 1.5rem;
+background: var(--input-bg);
+border: 1px solid var(--input-border);
+border-radius: 8px;
+color: var(--primary-text-color);
+font-size: 1rem;
+font-family: 'Roboto', sans-serif;
+transition: all 0.3s ease;
+outline: none;
+box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
 
-        .cyber-btn {
-            background: linear-gradient(45deg, var(--button-gradient-start), var(--button-gradient-end));
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            color: #FFFFFF;
-            font-size: 1rem;
-            font-weight: 700;
-            font-family: 'Montserrat', sans-serif;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 5px 15px var(--shadow-color);
-            min-height: 44px; /* Minimum touch target size */
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
+.cyber-input:focus {
+border-color: var(--accent-color);
+box-shadow: 0 0 15px rgba(0,123,255,0.4); /* Accent glow */
+transform: translateY(-2px); /* Slight lift */
+}
 
-        .cyber-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px var(--glow-color);
-        }
+.cyber-input::placeholder {
+color: var(--secondary-text-color);
+opacity: 0.7;
+}
 
-        .cyber-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 5px var(--shadow-color);
-        }
+.cyber-btn {
+background: linear-gradient(45deg, var(--button-gradient-start), var(--button-gradient-end));
+border: none;
+padding: 1.2rem 2.5rem;
+border-radius: 8px;
+color: #FFFFFF; /* White text for contrast */
+font-size: 1.1rem;
+font-weight: 700;
+font-family: 'Montserrat', sans-serif;
+cursor: pointer;
+transition: all 0.3s ease;
+position: relative;
+overflow: hidden;
+text-transform: uppercase;
+letter-spacing: 1px;
+box-shadow: 0 5px 15px var(--shadow-color);
+}
 
-        /* Main app interface */
-        .app-interface {
-            display: none;
-            animation: fadeInUp 0.8s ease-out;
-        }
+.cyber-btn:hover {
+transform: translateY(-3px); /* More pronounced lift */
+box-shadow: 0 8px 20px var(--glow-color); /* Stronger glow on hover */
+}
 
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+.cyber-btn:active {
+transform: translateY(0);
+box-shadow: 0 2px 5px var(--shadow-color);
+}
 
-        .control-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
+/* Main app interface */
+.app-interface {
+display: none;
+animation: fadeInUp 0.8s ease-out;
+}
 
-        /* Specific panel adjustments */
-        .training-setup {
-            text-align: center;
-        }
+@keyframes fadeInUp {
+from { opacity: 0; transform: translateY(20px); }
+to { opacity: 1; transform: translateY(0); }
+}
 
-        .puck-counter {
-            font-size: 2.5rem;
-            font-family: 'Montserrat', sans-serif;
-            color: var(--accent-color);
-            margin: 1rem 0;
-            text-shadow: 0 0 15px var(--glow-color);
-        }
+.control-panel {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 2rem;
+margin-bottom: 3rem;
+}
 
-        .status-display {
-            font-size: 1.1rem;
-            color: var(--accent-color);
-            margin-bottom: 1.5rem;
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-weight: 500;
-            transition: color 0.5s ease;
-            padding: 0.5rem;
-        }
-        .status-display.error {
-            color: var(--error-color);
-        }
-        .status-display.success {
-            color: var(--success-color);
-        }
+/* Specific panel adjustments */
+.training-setup {
+text-align: center;
+}
 
-        .session-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            box-shadow: 0 8px 16px var(--shadow-color);
-        }
+.puck-counter {
+font-size: 3.5rem;
+font-family: 'Montserrat', sans-serif;
+color: var(--accent-color);
+margin: 1.5rem 0;
+text-shadow: 0 0 15px var(--glow-color);
+}
 
-        .stat-card {
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
-            padding: 1.2rem;
-            text-align: center;
-            transition: background 0.5s ease, border-color 0.5s ease;
-        }
+.status-display {
+font-size: 1.2rem;
+color: var(--accent-color); /* Changed to accent color for consistency */
+margin-bottom: 2rem;
+min-height: 60px;
+display: flex;
+align-items: center;
+justify-content: center;
+text-align: center;
+font-weight: 500;
+transition: color 0.5s ease;
+}
+.status-display.error {
+color: var(--error-color);
+}
+.status-display.success {
+color: var(--success-color);
+}
 
-        .stat-number {
-            font-size: 2.2rem;
-            font-family: 'Montserrat', sans-serif;
-            color: var(--accent-color);
-            display: block;
-            margin-bottom: 0.5rem;
-        }
 
-        .stat-label {
-            font-size: 0.85rem;
-            color: var(--secondary-text-color);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 400;
-        }
+.session-stats {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 1.5rem;
+margin-bottom: 3rem;
+padding: 1.5rem; /* Add padding to make it a distinct block */
+background: var(--panel-bg);
+border: 1px solid var(--panel-border);
+border-radius: 12px;
+box-shadow: 0 8px 16px var(--shadow-color);
+}
 
-        .results-display {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            margin-bottom: 2rem;
-            display: none;
-            box-shadow: 0 10px 20px var(--shadow-color);
-        }
+.stat-card {
+background: var(--input-bg); /* Darker background for stat cards */
+border: 1px solid var(--input-border);
+border-radius: 8px;
+padding: 1.5rem;
+text-align: center;
+transition: background 0.5s ease, border-color 0.5s ease;
+}
 
-        .accuracy-circle {
-            width: 150px;
-            height: 150px;
-            margin: 1.5rem auto;
-            position: relative;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: rotateAccuracy 2s ease-in-out;
-            border: 4px solid var(--accent-color);
-            box-shadow: 0 0 20px var(--glow-color);
-            overflow: hidden;
-            background: var(--panel-bg);
-        }
-        .accuracy-circle::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: conic-gradient(var(--success-color) 0deg, var(--success-color) 0deg, rgba(0,0,0,0.2) 0deg, rgba(0,0,0,0.2) 360deg);
-            z-index: 1;
-        }
-        .accuracy-text {
-            font-size: 2.5rem;
-            font-family: 'Montserrat', sans-serif;
-            color: var(--success-color);
-            font-weight: 900;
-            z-index: 2;
-        }
+.stat-number {
+font-size: 2.8rem;
+font-family: 'Montserrat', sans-serif;
+color: var(--accent-color);
+display: block;
+margin-bottom: 0.5rem;
+}
 
-        .chart-container {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 2rem;
-            box-shadow: 0 10px 20px var(--shadow-color);
-        }
+.stat-label {
+font-size: 0.95rem;
+color: var(--secondary-text-color);
+text-transform: uppercase;
+letter-spacing: 1px;
+font-weight: 400;
+}
 
-        .chart-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.1rem;
-            color: var(--accent-color);
-            text-align: center;
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-weight: 700;
-        }
+.results-display {
+background: var(--panel-bg);
+border: 1px solid var(--panel-border);
+border-radius: 12px;
+padding: 2.5rem;
+text-align: center;
+margin-bottom: 2rem;
+display: none;
+box-shadow: 0 10px 20px var(--shadow-color);
+}
 
-        /* Enhanced Voice recognition animation */
-        .voice-indicator {
-            width: 100px;
-            height: 100px;
-            margin: 1rem auto;
-            position: relative;
-            display: none;
-        }
+.accuracy-circle {
+width: 180px; /* Slightly smaller */
+height: 180px;
+margin: 2rem auto;
+position: relative;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+animation: rotateAccuracy 2s ease-in-out;
+border: 4px solid var(--accent-color); /* Outer ring */
+box-shadow: 0 0 20px var(--glow-color);
+overflow: hidden; /* For conic gradient */
+background: var(--panel-bg); /* Base background for the circle */
+}
+.accuracy-circle::before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+border-radius: 50%;
+background: conic-gradient(var(--success-color) 0deg, var(--success-color) 0deg, rgba(0,0,0,0.2) 0deg, rgba(0,0,0,0.2) 360deg);
+z-index: 1;
+/* Will be dynamically updated by JS */
+}
+.accuracy-text {
+font-size: 3.2rem;
+font-family: 'Montserrat', sans-serif;
+color: var(--success-color);
+font-weight: 900;
+z-index: 2; /* Ensure text is above conic gradient */
+}
 
-        .voice-wave {
-            position: absolute;
-            border: 2px solid var(--accent-color);
-            border-radius: 50%;
-            animation: voicePulse 2s infinite ease-in-out;
-            opacity: 0;
-        }
+.chart-container {
+background: var(--panel-bg);
+border: 1px solid var(--panel-border);
+border-radius: 12px;
+padding: 2rem;
+margin-top: 2rem;
+box-shadow: 0 10px 20px var(--shadow-color);
+}
 
-        .voice-wave:nth-child(1) { animation-delay: 0s; }
-        .voice-wave:nth-child(2) { animation-delay: 0.4s; }
-        .voice-wave:nth-child(3) { animation-delay: 0.8s; }
+.chart-title {
+font-family: 'Montserrat', sans-serif;
+font-size: 1.3rem;
+color: var(--accent-color);
+text-align: center;
+margin-bottom: 2rem;
+text-transform: uppercase;
+letter-spacing: 1.5px;
+font-weight: 700;
+}
 
-        @keyframes voicePulse {
-            0% {
-                width: 30px;
-                height: 30px;
-                top: 35px;
-                left: 35px;
-                opacity: 0.8;
-            }
-            100% {
-                width: 100px;
-                height: 100px;
-                top: 0;
-                left: 0;
-                opacity: 0;
-            }
-        }
+/* Voice recognition animation */
+.voice-indicator {
+width: 80px; /* Smaller */
+height: 80px;
+margin: 1.5rem auto;
+position: relative;
+display: none;
+}
 
-        /* Mobile-optimized button layout */
-        .button-group {
-            display: flex;
-            gap: 0.8rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 1rem;
-        }
+.voice-wave {
+position: absolute;
+border: 2px solid var(--accent-color);
+border-radius: 50%;
+animation: voicePulse 2s infinite ease-in-out;
+opacity: 0;
+}
 
-        .manual-input-buttons {
-            display: flex;
-            gap: 0.8rem;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-        .manual-input-buttons .cyber-btn {
-            flex: 1;
-            padding: 1rem 1.5rem;
-            font-size: 1rem;
-            min-width: 120px;
-        }
+.voice-wave:nth-child(1) { animation-delay: 0s; }
+.voice-wave:nth-child(2) { animation-delay: 0.4s; } /* Adjusted delays */
+.voice-wave:nth-child(3) { animation-delay: 0.8s; }
 
-        /* Success and Miss animations */
-        .success-animation, .miss-animation {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            font-size: 2.5rem;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            animation: popOut 0.6s ease-out forwards;
-            pointer-events: none;
-            opacity: 0;
-            text-shadow: 0 0 10px currentColor;
-        }
-        .success-animation { color: var(--success-color); }
-        .miss-animation { color: var(--error-color); }
+@keyframes voicePulse {
+0% {
+width: 20px;
+height: 20px;
+top: 30px;
+left: 30px;
+opacity: 0.8;
+}
+100% {
+width: 80px;
+height: 80px;
+top: 0;
+left: 0;
+opacity: 0;
+}
+}
 
-        @keyframes popOut {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-        }
+/* Responsive design */
+@media (max-width: 768px) {
+.container {
+padding: 1rem; /* Less padding on small screens */
+}
+.control-panel {
+grid-template-columns: 1fr; /* Stack panels vertically */
+gap: 1.5rem;
+}
 
-        /* Microphone permission prompt */
-        .mic-permission-prompt {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            text-align: center;
-            display: none;
-            box-shadow: 0 5px 15px var(--shadow-color);
-        }
+.logo {
+font-size: 2.5rem; /* Smaller logo on mobile */
+}
+.subtitle {
+font-size: 1rem;
+}
 
-        .mic-permission-prompt.show {
-            display: block;
-            animation: slideDown 0.3s ease-out;
-        }
+.session-stats {
+grid-template-columns: 1fr; /* Single column on small screens */
+}
 
-        @keyframes slideDown {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+.login-panel, .panel {
+padding: 1.5rem; /* Less padding for panels */
+}
 
-        /* Responsive design for mobile */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0.5rem;
-            }
-            
-            .logo {
-                font-size: 2rem;
-            }
-            .subtitle {
-                font-size: 0.8rem;
-            }
-            
-            .login-panel, .panel {
-                padding: 1.5rem;
-                margin: 0 0.5rem;
-            }
+.cyber-input {
+padding: 1rem 1rem; /* Smaller input padding */
+font-size: 0.9rem;
+}
+.cyber-btn {
+padding: 0.9rem 1.8rem;
+font-size: 0.95rem;
+}
 
-            .cyber-input {
-                padding: 1rem;
-                font-size: 16px; /* Prevent zoom on iOS */
-            }
-            
-            .cyber-btn {
-                padding: 1rem 1.5rem;
-                font-size: 0.9rem;
-                min-width: 100px;
-            }
-            
-            .puck-counter {
-                font-size: 2rem;
-            }
-            
-            .status-display {
-                font-size: 1rem;
-                min-height: 50px;
-            }
-            
-            .stat-number {
-                font-size: 1.8rem;
-            }
-            
-            .accuracy-circle {
-                width: 120px;
-                height: 120px;
-            }
-            .accuracy-text {
-                font-size: 2rem;
-            }
+.puck-counter {
+font-size: 2.8rem; /* Smaller puck counter */
+}
+.status-display {
+font-size: 1rem; /* Smaller status text */
+}
 
-            .chart-container {
-                padding: 1rem;
-            }
-            
-            #performanceChart {
-                height: 200px !important;
-                width: 100% !important;
-            }
+.stat-number {
+font-size: 2.2rem; /* Smaller stats numbers */
+}
+.stat-label {
+font-size: 0.85rem;
+}
 
-            .voice-indicator {
-                width: 80px;
-                height: 80px;
-            }
+.accuracy-circle {
+width: 150px; /* Smaller circle */
+height: 150px;
+}
+.accuracy-text {
+font-size: 2.5rem; /* Smaller accuracy text */
+}
 
-            .voice-wave:nth-child(1) { 
-                animation: voicePulseMobile 2s infinite ease-in-out;
-                animation-delay: 0s; 
-            }
-            .voice-wave:nth-child(2) { 
-                animation: voicePulseMobile 2s infinite ease-in-out;
-                animation-delay: 0.4s; 
-            }
-            .voice-wave:nth-child(3) { 
-                animation: voicePulseMobile 2s infinite ease-in-out;
-                animation-delay: 0.8s; 
-            }
+.chart-container {
+padding: 1.5rem; /* Smaller chart padding */
+}
+.chart-title {
+font-size: 1.1rem; /* Smaller chart title */
+}
+/* Explicitly set height for canvas on mobile */
+#performanceChart {
+height: 250px !important;
+width: 100% !important;
+}
+}
 
-            @keyframes voicePulseMobile {
-                0% {
-                    width: 20px;
-                    height: 20px;
-                    top: 30px;
-                    left: 30px;
-                    opacity: 0.8;
-                }
-                100% {
-                    width: 80px;
-                    height: 80px;
-                    top: 0;
-                    left: 0;
-                    opacity: 0;
-                }
-            }
-        }
+/* Success and Miss animations */
+.success-animation, .miss-animation {
+position: fixed;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+z-index: 1000;
+font-size: 3.5rem; /* Slightly smaller for elegance */
+font-family: 'Montserrat', sans-serif;
+font-weight: 700;
+animation: popOut 0.6s ease-out forwards; /* New animation */
+pointer-events: none;
+opacity: 0; /* Start hidden */
+}
+.success-animation { color: var(--success-color); }
+.miss-animation { color: var(--error-color); }
 
-        /* Touch-friendly improvements */
-        @media (hover: none) and (pointer: coarse) {
-            .cyber-btn:hover {
-                transform: none;
-                box-shadow: 0 5px 15px var(--shadow-color);
-            }
-            
-            .cyber-btn:active {
-                transform: scale(0.95);
-                transition: transform 0.1s ease;
-            }
-        }
-    </style>
+@keyframes popOut {
+0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+100% { transform: translate(-50%, -50%) scale(1); opacity: 0; /* Fade out at end */ }
+}
+
+/* Hit/Miss Buttons for manual input */
+.manual-input-buttons {
+display: flex;
+gap: 1rem;
+justify-content: center;
+margin-top: 1.5rem;
+}
+.manual-input-buttons .cyber-btn {
+flex: 1;
+padding: 0.8rem 1.5rem; /* Slightly smaller buttons */
+font-size: 0.95rem;
+}
+
+</style>
 </head>
 <body>
-    <canvas id="bg-canvas"></canvas>
-    
-    <div class="grid-overlay"></div>
+<canvas id="bg-canvas"></canvas>
 
-    <div class="container">
-        <div class="header">
-            <div class="logo">HOCKEYTECH</div>
-            <div class="subtitle">SHOOTING ACCURACY TOOL</div>
-        </div>
+<div class="grid-overlay"></div>
 
-        <div id="loginPanel" class="login-panel">
-            <div class="panel-title">ACCESS TERMINAL</div>
-            <div class="input-group">
-                <input type="text" id="username" class="cyber-input" placeholder="USERNAME" autocomplete="username" />
-            </div>
-            <div class="input-group">
-                <input type="password" id="password" class="cyber-input" placeholder="PASSWORD" autocomplete="current-password" />
-            </div>
-            <div style="text-align: center;">
-                <button class="cyber-btn" onclick="login()">INITIALIZE SYSTEM</button>
-            </div>
-        </div>
+<div class="container">
+<div class="header">
+<div class="logo">HOCKEYTECH</div>
+<div class="subtitle">SHOOTING ACCURACY TOOL</div>
+</div>
 
-        <div id="appInterface" class="app-interface">
-            <div class="control-panel">
-                <div class="panel training-setup">
-                    <div class="panel-title">Training Protocol</div>
-                    <div class="input-group">
-                        <input type="number" id="targetShots" class="cyber-input" placeholder="PUCK COUNT" min="1" max="100" />
-                    </div>
-                    <div class="puck-counter" id="puckCounter">0 / 0</div>
-                    <div class="button-group">
-                        <button class="cyber-btn" onclick="startSession()">START</button>
-                        <button class="cyber-btn" onclick="resetSession()">RESET</button>
-                    </div>
-                    <div class="manual-input-buttons">
-                        <button class="cyber-btn" onclick="recordResult(true)">HIT</button>
-                        <button class="cyber-btn" onclick="recordResult(false)">MISS</button>
-                    </div>
-                </div>
+<div id="loginPanel" class="login-panel">
+<div class="panel-title" style="text-align: center; margin-bottom: 2rem;">ACCESS TERMINAL</div>
+<div class="input-group">
+<input type="text" id="username" class="cyber-input" placeholder="USERNAME" />
+</div>
+<div class="input-group">
+<input type="password" id="password" class="cyber-input" placeholder="PASSWORD" />
+</div>
+<div style="text-align: center;">
+<button class="cyber-btn" onclick="login()">INITIALIZE SYSTEM</button>
+</div>
+</div>
 
-                <div class="panel">
-                    <div class="panel-title">System Status</div>
-                    
-                    <div class="mic-permission-prompt" id="micPermissionPrompt">
-                        <p style="margin-bottom: 1rem; color: var(--accent-color);">🎤 Microphone Access Required</p>
-                        <p style="margin-bottom: 1rem; font-size: 0.9rem;">Enable microphone to use voice commands ("HIT" or "MISS")</p>
-                        <button class="cyber-btn" onclick="requestMicrophonePermission()">ENABLE MIC</button>
-                    </div>
-                    
-                    <div class="status-display" id="statusDisplay">
-                        System Ready - Initialize Training Protocol
-                    </div>
-                    <div class="voice-indicator" id="voiceIndicator">
-                        <div class="voice-wave"></div>
-                        <div class="voice-wave"></div>
-                        <div class="voice-wave"></div>
-                    </div>
-                </div>
-            </div>
+<div id="appInterface" class="app-interface">
+<div class="control-panel">
+<div class="panel training-setup">
+<div class="panel-title">Training Protocol</div>
+<div class="input-group">
+<input type="number" id="targetShots" class="cyber-input" placeholder="PUCK COUNT" min="1" max="100" />
+</div>
+<div class="puck-counter" id="puckCounter">0 / 0</div> <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+<button class="cyber-btn" onclick="startSession()">START</button>
+<button class="cyber-btn" onclick="resetSession()">RESET</button>
+</div>
+<div class="manual-input-buttons">
+<button class="cyber-btn" onclick="recordResult(true)">HIT</button>
+<button class="cyber-btn" onclick="recordResult(false)">MISS</button>
+</div>
+</div>
 
-            <div class="session-stats" id="sessionStats" style="display: none;">
-                <div class="stat-card">
-                    <span class="stat-number" id="hitsCount">0</span>
-                    <span class="stat-label">Hits</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-number" id="missesCount">0</span>
-                    <span class="stat-label">Misses</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-number" id="currentAccuracy">0%</span>
-                    <span class="stat-label">Accuracy</span>
-                </div>
-            </div>
+<div class="panel">
+<div class="panel-title">System Status</div>
+<div class="status-display" id="statusDisplay">
+System Ready - Initialize Training Protocol
+</div>
+<div class="voice-indicator" id="voiceIndicator">
+<div class="voice-wave"></div>
+<div class="voice-wave"></div>
+<div class="voice-wave"></div>
+</div>
+</div>
+</div>
 
-            <div class="results-display" id="resultsDisplay">
-                <div class="panel-title">Training Complete</div>
-                <div class="accuracy-circle" id="accuracyCircle">
-                    <div class="accuracy-text" id="accuracyText">0%</div>
-                </div>
-                <div id="finalStats" style="font-size: 1.2rem; color: var(--primary-text-color);"></div>
-            </div>
+<div class="session-stats" id="sessionStats" style="display: none;">
+<div class="stat-card">
+<span class="stat-number" id="hitsCount">0</span>
+<span class="stat-label">Hits</span>
+</div>
+<div class="stat-card">
+<span class="stat-number" id="missesCount">0</span>
+<span class="stat-label">Misses</span>
+</div>
+<div class="stat-card">
+<span class="stat-number" id="currentAccuracy">0%</span>
+<span class="stat-label">Accuracy</span>
+</div>
+</div>
 
-            <div class="chart-container">
-                <div class="chart-title">Performance Analytics</div>
-                <canvas id="performanceChart"></canvas>
-            </div>
-        </div>
-    </div>
+<div class="results-display" id="resultsDisplay">
+<div class="panel-title">Training Complete</div>
+<div class="accuracy-circle" id="accuracyCircle">
+<div class="accuracy-text" id="accuracyText">0%</div>
+</div>
+<div id="finalStats" style="font-size: 1.3rem; color: var(--primary-text-color);"></div>
+</div>
 
-    <script>
-        // Three.js background setup
-        let scene, camera, renderer, particles;
-        
-        function initThreeJS() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            
-            const particleGeometry = new THREE.BufferGeometry();
-            const particleCount = 500; // Reduced for mobile performance
-            const positions = new Float32Array(particleCount * 3);
-            
-            for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] = (Math.random() - 0.5) * 2000;
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 2000;
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 2000;
-            }
-            
-            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            
-            const particleMaterial = new THREE.PointsMaterial({
-                color: 0x007BFF,
-                size: 2,
-                transparent: true,
-                opacity: 0.6
-            });
-            
-            particles = new THREE.Points(particleGeometry, particleMaterial);
-            scene.add(particles);
-            
-            camera.position.z = 500;
-            
-            animate();
-        }
-        
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            if (particles) {
-                particles.rotation.x += 0.001;
-                particles.rotation.y += 0.002;
-            }
-            
-            renderer.render(scene, camera);
-        }
-        
-        // Initialize Three.js background
-        initThreeJS();
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            if (chart) {
-                chart.resize();
-            }
-        });
+<div class="chart-container">
+<div class="chart-title">Performance Analytics</div>
+<canvas id="performanceChart"></canvas>
+</div>
+</div>
+</div>
 
-        // App logic
-        const validUsers = ["jack", "callie"];
-        const validPassword = "hockey";
-        let currentUser = null;
-        let targetShots = 0;
-        let currentShots = 0;
-        let hits = 0;
-        let misses = 0;
-        let sessionActive = false;
-        let recognition = null;
-        let microphonePermission = false;
-        let restartTimeout = null;
-        let isListening = false;
-        
-        // Chart variable
-        let chart = null;
+<script>
+// Three.js background setup
+let scene, camera, renderer, particles;
 
-        // Use in-memory storage instead of localStorage
-        let userHistory = {};
+function initThreeJS() {
+scene = new THREE.Scene();
+camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
 
-        function login() {
-            const user = document.getElementById("username").value.toLowerCase();
-            const pass = document.getElementById("password").value;
-            
-            if (validUsers.includes(user) && pass === validPassword) {
-                currentUser = user;
-                document.getElementById("loginPanel").style.display = "none";
-                document.getElementById("appInterface").style.display = "block";
-                updateChart();
-                showWelcomeMessage();
-            } else {
-                showError("ACCESS DENIED - Invalid Credentials");
-            }
-        }
+const particleGeometry = new THREE.BufferGeometry();
+const particleCount = 1000;
+const positions = new Float32Array(particleCount * 3);
 
-        function showWelcomeMessage() {
-            const statusDisplay = document.getElementById("statusDisplay");
-            statusDisplay.innerHTML = `Welcome, ${currentUser.toUpperCase()}. System initialized.`;
-            statusDisplay.classList.remove('error');
-            statusDisplay.classList.add('success');
-            
-            setTimeout(() => {
-                statusDisplay.innerHTML = "System Ready - Initialize Training Protocol";
-                statusDisplay.classList.remove('success');
-            }, 3000);
-        }
+for (let i = 0; i < particleCount; i++) {
+positions[i * 3] = (Math.random() - 0.5) * 2000;
+positions[i * 3 + 1] = (Math.random() - 0.5) * 2000;
+positions[i * 3 + 2] = (Math.random() - 0.5) * 2000;
+}
 
-        function showError(message) {
-            const statusDisplay = document.getElementById("statusDisplay");
-            statusDisplay.innerHTML = message;
-            statusDisplay.classList.add('error');
-            
-            setTimeout(() => {
-                statusDisplay.innerHTML = "System Ready - Initialize Training Protocol";
-                statusDisplay.classList.remove('error');
-            }, 3000);
-        }
+particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-        function updateStatus(message, type = '') {
-            const statusDisplay = document.getElementById("statusDisplay");
-            statusDisplay.innerHTML = message;
-            statusDisplay.classList.remove('error', 'success');
-            if (type) {
-                statusDisplay.classList.add(type);
-            }
-        }
+const particleMaterial = new THREE.PointsMaterial({
+color: 0x007BFF, // Accent color for particles (blue)
+size: 2,
+transparent: true,
+opacity: 0.6
+});
 
-        async function requestMicrophonePermission() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                microphonePermission = true;
-                document.getElementById("micPermissionPrompt").classList.remove('show');
-                updateStatus("Microphone access granted! Voice commands enabled.", 'success');
-                
-                // Stop the stream immediately after checking permission
-                stream.getTracks().forEach(track => track.stop());
-                
-                // Initialize speech recognition after permission is granted
-                initSpeechRecognition();
-                
-                setTimeout(() => {
-                    if (!sessionActive) {
-                        updateStatus("System Ready - Initialize Training Protocol");
-                    }
-                }, 2000);
-            } catch (err) {
-                console.error("Microphone permission denied:", err);
-                updateStatus("Microphone access denied. Manual buttons will be used.", 'error');
-                microphonePermission = false;
-                
-                setTimeout(() => {
-                    if (!sessionActive) {
-                        updateStatus("System Ready - Initialize Training Protocol");
-                    }
-                }, 3000);
-            }
-        }
+particles = new THREE.Points(particleGeometry, particleMaterial);
+scene.add(particles);
 
-        function initSpeechRecognition() {
-            // Check if browser supports speech recognition
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                updateStatus("Voice recognition not supported in this browser", 'error');
-                return;
-            }
+camera.position.z = 500;
 
-            // Create recognition object
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SpeechRecognition();
+animate();
+}
+
+function animate() {
+requestAnimationFrame(animate);
+
+if (particles) {
+particles.rotation.x += 0.001;
+particles.rotation.y += 0.002;
+}
+
+renderer.render(scene, camera);
+}
+
+// Initialize Three.js background
+initThreeJS();
+
+// Handle window resize
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+if (chart) {
+chart.resize(); // Manually trigger Chart.js resize
+}
+});
+
+// App logic
+const validUsers = ["jack", "callie"];
+const validPassword = "hockey";
+let currentUser = null;
+let targetShots = 0;
+let currentShots = 0;
+let hits = 0;
+let misses = 0;
+let sessionActive = false;
+let recognition = null;
+
+// Chart variable to hold the Chart.js instance
+let chart = null;
+
+function login() {
+const user = document.getElementById("username").value.toLowerCase();
+const pass = document.getElementById("password").value;
+
+if (validUsers.includes(user) && pass === validPassword) {
+currentUser = user;
+document.getElementById("loginPanel").style.display = "none";
+document.getElementById("appInterface").style.display = "block";
+updateChart(); // Initialize chart on successful login
+showWelcomeMessage();
+} else {
+showError("ACCESS DENIED - Invalid Credentials");
+}
+}
+
+function showWelcomeMessage() {
+const statusDisplay = document.getElementById("statusDisplay");
+statusDisplay.innerHTML = `Welcome, ${currentUser.toUpperCase()}. System initialized.`;
+statusDisplay.classList.remove('error');
+statusDisplay.classList.add('success');
+
+setTimeout(() => {
+statusDisplay.innerHTML = "System Ready - Initialize Training Protocol";
+statusDisplay.classList.remove('success');
+}, 3000);
+}
+
+function showError(message) {
+const statusDisplay = document.getElementById("statusDisplay");
+statusDisplay.innerHTML = message;
+statusDisplay.classList.add('error');
+
+setTimeout(() => {
+statusDisplay.innerHTML = "System Ready - Initialize Training Protocol";
+statusDisplay.classList.remove('error');
+}, 3000);
+}
+
+function startSession() {
+const input = document.getElementById("targetShots").value;
+if (!input || parseInt(input) <= 0 || parseInt(input) > 100) {
+showError("Invalid puck count. Enter 1-100.");
+return;
+}
+
+targetShots = parseInt(input);
+currentShots = 0;
+hits = 0;
+misses = 0;
+sessionActive = true;
+
+document.getElementById("resultsDisplay").style.display = "none";
+document.getElementById("sessionStats").style.display = "grid";
+// Update puck counter to show current progress
+document.getElementById("puckCounter").textContent = `${currentShots} / ${targetShots}`;
+
+updateSessionStats();
+updateStatus(`Training Active - Shot 1 of ${targetShots}`, 'success');
+startVoiceRecognition(); // Attempt to start voice recognition
+}
+
+function resetSession() {
+sessionActive = false;
+targetShots = 0;
+currentShots = 0;
+hits = 0;
+misses = 0;
+
+if (recognition) {
+recognition.stop();
+recognition = null; // Clear recognition instance
+}
+
+document.getElementById("voiceIndicator").style.display = "none";
+document.getElementById("resultsDisplay").style.display = "none";
+document.getElementById("sessionStats").style.display = "none";
+document.getElementById("puckCounter").textContent = "0 / 0"; // Reset puck counter display
+document.getElementById("targetShots").value = ""; // Clear input
+
+updateSessionStats(); // Reset displayed stats to 0
+updateStatus("System Ready - Initialize Training Protocol");
+}
+
+function updateStatus(message, type = null) {
+const statusDisplay = document.getElementById("statusDisplay");
+statusDisplay.innerHTML = message;
+statusDisplay.classList.remove('error', 'success');
+if (type) {
+statusDisplay.classList.add(type);
+}
+}
+
+function updateSessionStats() {
+document.getElementById("hitsCount").textContent = hits;
+document.getElementById("missesCount").textContent = misses;
+const accuracy = currentShots > 0 ? Math.round((hits / currentShots) * 100) : 0;
+document.getElementById("currentAccuracy").textContent = `${accuracy}%`;
+}
+
+function recordResult(isHit) {
+if (!sessionActive || currentShots >= targetShots) {
+showError("Session not active or target shots reached.");
+return;
+}
+
+currentShots++;
+if (isHit) {
+hits++;
+showAnimation('HIT! 🎯', 'success');
+} else {
+misses++;
+showAnimation('MISS ❌', 'miss');
+}
+
+document.getElementById("puckCounter").textContent = `${currentShots} / ${targetShots}`; // Update puck counter
+updateSessionStats(); // Update displayed hits/misses/accuracy
+
+if (currentShots >= targetShots) {
+endSession();
+} else {
+updateStatus(`Training Active - Shot ${currentShots + 1} of ${targetShots}`, 'success');
+}
+}
+
+function showAnimation(text, type) {
+const animation = document.createElement('div');
+animation.className = `${type}-animation`;
+animation.textContent = text;
+document.body.appendChild(animation);
+
+animation.addEventListener('animationend', () => {
+document.body.removeChild(animation);
+});
+}
+
+function endSession() {
+sessionActive = false;
+if (recognition) {
+recognition.stop();
+recognition = null; // Clear recognition instance
+}
+
+document.getElementById("voiceIndicator").style.display = "none";
+
+const accuracy = Math.round((hits / targetShots) * 100);
+
+const accuracyCircle = document.getElementById("accuracyCircle");
+const accuracyText = document.getElementById("accuracyText");
+const finalStats = document.getElementById("finalStats");
+
+accuracyText.textContent = `${accuracy}%`;
+finalStats.innerHTML = `${hits} HITS / ${targetShots} SHOTS<br>Training Session Complete`;
+
+updateAccuracyCircleGradient(accuracy);
+accuracyCircle.querySelector('.accuracy-text').style.color = getComputedStyle(document.documentElement).getPropertyValue('--success-color');
+
+document.getElementById("resultsDisplay").style.display = "block";
+updateStatus("Training Complete - Session Data Recorded", 'success');
+
+saveToHistory(accuracy);
+updateChart(); // Update chart after session ends and data is saved
+}
+
+function updateAccuracyCircleGradient(accuracy = 0) {
+const accuracyCircle = document.getElementById("accuracyCircle");
+const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success-color');
+const degree = (accuracy / 100) * 360;
+accuracyCircle.style.background = `conic-gradient(${successColor} 0deg, ${successColor} ${degree}deg, rgba(0,0,0,0.2) ${degree}deg, rgba(0,0,0,0.2) 360deg)`;
+}
+
+
+function startVoiceRecognition() {
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SpeechRecognition) {
+updateStatus("Voice recognition not supported in this browser. Use HIT/MISS buttons.", 'error');
+return;
+}
+
+// If a recognition instance already exists and is active, stop it before creating a new one
+if (recognition) {
+recognition.stop();
+recognition = null;
+}
+
+recognition = new SpeechRecognition();
+recognition.lang = "en-US";
+recognition.continuous = true;
+recognition.interimResults = false;
+
+recognition.onstart = () => {
+document.getElementById("voiceIndicator").style.display = "block";
+updateStatus("Listening for 'HIT' or 'MISS'...", 'success');
+};
+
+recognition.onresult = (event) => {
+const lastResult = event.results[event.results.length - 1];
+const transcript = lastResult[0].transcript.trim().toLowerCase();
+
+if (transcript.includes("hit")) {
+recordResult(true);
+} else if (transcript.includes("miss")) {
+recordResult(false);
+}
+};
+
+recognition.onerror = (event) => {
+console.error("Speech recognition error:", event.error);
+document.getElementById("voiceIndicator").style.display = "none"; // Hide indicator on error
+if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+showError("Microphone access denied. Please enable in browser settings or use HIT/MISS buttons.");
+} else if (event.error === 'no-speech') {
+// This is the common case: no speech detected after a period of silence.
+// The onend event will follow this and restart if sessionActive.
+updateStatus("No speech detected. Re-listening. Use HIT/MISS buttons if preferred.", 'secondary');
+} else {
+showError(`Voice recognition error: ${event.error}. Please try again or use HIT/MISS buttons.`);
+}
+};
+
+recognition.onend = () => {
+// If the session is still active, try to restart recognition after a short delay
+if (sessionActive) {
+setTimeout(() => {
+if (sessionActive && recognition) { // Double check session is still active AND recognition object exists
+recognition.start();
+// Re-display voice indicator as recognition is restarting
+document.getElementById("voiceIndicator").style.display = "block";
+}
+}, 700); // Increased delay slightly to 700ms for more robustness
+} else {
+document.getElementById("voiceIndicator").style.display = "none"; // Hide indicator if session ended
+}
+};
+
+// Request microphone permission when trying to start
+navigator.mediaDevices.getUserMedia({ audio: true })
+.then(function(stream) {
+// We successfully got permission, now start recognition if session is active
+if (sessionActive && !recognition.running) { // Check if not already running to avoid errors
+recognition.start();
+}
+stream.getTracks().forEach(track => track.stop()); // Stop the stream immediately after checking permission
+})
+.catch(function(err) {
+console.error("Microphone access denied:", err);
+showError("Microphone access denied. Use HIT/MISS buttons.");
+document.getElementById("voiceIndicator").style.display = "none";
+if (sessionActive) {
+updateStatus("Microphone access denied. Use HIT/MISS buttons.", 'error');
+}
+});
+}
+
+function getHistory() {
+const allHistory = JSON.parse(localStorage.getItem("hockeyTechHistory") || "{}");
+return allHistory[currentUser] || [];
+}
+
+function saveToHistory(accuracy) {
+const allHistory = JSON.parse(localStorage.getItem("hockeyTechHistory") || "{}");
+if (!allHistory[currentUser]) {
+allHistory[currentUser] = [];
+}
+
+allHistory[currentUser].push({
+date: new Date().toLocaleDateString(),
+accuracy: accuracy,
+hits: hits,
+shots: targetShots,
+timestamp: Date.now()
+});
+
+localStorage.setItem("hockeyTechHistory", JSON.stringify(allHistory));
+console.log("History saved for", currentUser, ":", allHistory[currentUser]); // Debugging line
+}
+
+function updateChartColors() {
+const rootStyles = getComputedStyle(document.documentElement);
+const primaryTextColor = rootStyles.getPropertyValue('--primary-text-color');
+const accentColor = rootStyles.getPropertyValue('--chart-line-color');
+const chartFillColor = rootStyles.getPropertyValue('--chart-fill-color');
+const gridColor = rootStyles.getPropertyValue('--panel-border');
+
+if (chart) {
+chart.options.scales.x.ticks.color = primaryTextColor;
+chart.options.scales.x.grid.color = gridColor;
+chart.options.scales.y.ticks.color = primaryTextColor;
+chart.options.scales.y.grid.color = gridColor;
+chart.options.plugins.legend.labels.color = primaryTextColor;
+
+chart.data.datasets[0].borderColor = accentColor;
+chart.data.datasets[0].backgroundColor = chartFillColor;
+chart.data.datasets[0].pointBackgroundColor = accentColor;
+chart.data.datasets[0].pointBorderColor = primaryTextColor;
+chart.update();
+}
+}
+
+function updateChart() {
+const canvas = document.getElementById("performanceChart");
+const ctx = canvas.getContext("2d");
+
+if (chart) {
+chart.destroy(); // Destroy existing chart instance to redraw
+}
+
+const history = getHistory();
+const labels = history.map(h => {
+const date = new Date(h.timestamp);
+return `${date.getMonth() + 1}/${date.getDate()}`; // MM/DD format for chart labels
+});
+const data = history.map(h => h.accuracy);
+
+const rootStyles = getComputedStyle(document.documentElement);
+const primaryTextColor = rootStyles.getPropertyValue('--primary-text-color');
+const accentColor = rootStyles.getPropertyValue('--chart-line-color');
+const chartFillColor = rootStyles.getPropertyValue('--chart-fill-color');
+const gridColor = rootStyles.getPropertyValue('--panel-border');
+
+chart = new Chart(ctx, {
+type: "line",
+data: {
+labels: labels,
+datasets: [{
+label: "Accuracy %",
+data: data,
+borderColor: accentColor,
+backgroundColor: chartFillColor,
+borderWidth: 3,
+fill: true,
+tension: 0.4,
+pointBackgroundColor: accentColor,
+pointBorderColor: primaryTextColor,
+pointBorderWidth: 2,
+pointRadius: 6
+}]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false, // Allow canvas to resize freely
+plugins: {
+legend: {
+labels: {
+color: primaryTextColor,
+font: {
+family: "Montserrat",
+size: 14
+},
+},
+},
+tooltip: {
+callbacks: {
+label: function(context) {
+let label = context.dataset.label || '';
+if (label) {
+label += ': ';
+}
+if (context.parsed.y !== null) {
+label += `${context.parsed.y}%`;
+}
+return label;
+},
+title: function(context) {
+if (history[context[0].dataIndex]) {
+return `Date: ${history[context[0].dataIndex].date}\nShots: ${history[context[0].dataIndex].shots}\nHits: ${history[context[0].dataIndex].hits}`;
+}
+return '';
+}
+},
+titleFont: { family: 'Montserrat' },
+bodyFont: { family: 'Roboto' },
+backgroundColor: 'rgba(0,0,0,0.8)',
+titleColor: '#fff',
+bodyColor: '#fff',
+borderColor: accentColor,
+borderWidth: 1,
+padding: 10
+}
+},
+scales: {
+x: {
+ticks: {
+color: primaryTextColor,
+font: {
+family: "Roboto",
+size: 12
+},
+},
+grid: {
+color: gridColor,
+drawBorder: false,
+},
+},
+y: {
+min: 0,
+max: 100,
+ticks: {
+color: primaryTextColor,
+font: {
+family: "Roboto",
+size: 12
+},
+callback: function(value) {
+return value + '%';
+}
+},
+grid: {
+color: gridColor,
+drawBorder: false,
+},
+},
+},
+},
+});
+}
+</script>
+</body>
+</html>
