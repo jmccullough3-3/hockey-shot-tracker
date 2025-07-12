@@ -1,1 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hockey Shot Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: #0f0f0f;
+      color: #00ffcc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+    h1 {
+      margin-bottom: 1rem;
+      font-size: 2rem;
+    }
+    .controls, #loginForm {
+      margin-bottom: 2rem;
+    }
+    button {
+      background: #00ffcc;
+      color: black;
+      border: none;
+      padding: 1rem 2rem;
+      margin: 0.5rem;
+      font-size: 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #results {
+      font-size: 1.5rem;
+      margin-top: 1rem;
+    }
+    canvas {
+      margin-top: 2rem;
+      max-width: 90vw;
+    }
+    input[type="number"], input[type="text"], input[type="password"] {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: none;
+      margin-right: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hockey Shot Tracker</h1>
+
+  <div id="loginForm">
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="controls">
+      <input type="number" id="targetShots" placeholder="Number of pucks" min="1">
+      <button onclick="startSession()">Start</button>
+      <button onclick="resetSession()">Reset</button>
+    </div>
+    <div id="status">Press Start and say "hit" or "miss" after each shot.</div>
+    <div id="results"></div>
+    <canvas id="historyChart" width="400" height="200"></canvas>
+  </div>
+
+  <script>
+    const validUsers = ["jack", "callie"];
+    const validPassword = "hockey";
+    let currentUser = null;
+
+    function login() {
+      const user = document.getElementById("username").value.toLowerCase();
+      const pass = document.getElementById("password").value;
+      if (validUsers.includes(user) && pass === validPassword) {
+        currentUser = user;
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        drawChart();
+      } else {
+        alert("Invalid login");
+      }
+    }
+
+    let targetShots = 0;
+    let currentShots = 0;
+    let hits = 0;
+    let sessionActive = false;
+    let recognition;
+
+    function getHistory() {
+      const allHistory = JSON.parse(localStorage.getItem('hockeyShotHistory') || '{}');
+      return allHistory[currentUser] || [];
+    }
+
+    function saveHistory(data) {
+      const allHistory = JSON.parse(localStorage.getItem('hockeyShotHistory') || '{}');
+      if (!allHistory[currentUser]) allHistory[currentUser] = [];
+      allHistory[currentUser].push(data);
+      localStorage.setItem('hockeyShotHistory', JSON.stringify(allHistory));
+    }
+
+    const statusEl = document.getElementById('status');
+    const resultsEl = document.getElementById('results');
+
+    function startSession() {
+      const input = document.getElementById('targetShots').value;
+      if (!input || input <= 0) return alert("Please enter a valid number of shots.");
+
+      targetShots = parseInt(input);
+      currentShots = 0;
+      hits = 0;
+      sessionActive = true;
+      resultsEl.innerHTML = '';
+      statusEl.innerText = `Listening... Shot 1 of ${targetShots}`;
+      startListening();
+    }
+
+    function resetSession() {
+      sessionActive = false;
+      targetShots = 0;
+      currentShots = 0;
+      hits = 0;
+      resultsEl.innerHTML = '';
+      statusEl.innerText = 'Press Start and say "hit" or "miss" after each shot.';
+      if (recognition) recognition.stop();
+    }
+
+    function recordResult(word) {
+      if (!sessionActive || currentShots >= targetShots) return;
+
+      if (word.includes("hit")) hits++;
+      currentShots++;
+
+      if (currentShots >= targetShots) {
+        endSession();
+      } else {
+        statusEl.innerText = `Listening... Shot ${currentShots + 1} of ${targetShots}`;
+      }
+    }
+
+    function endSession() {
+      sessionActive = false;
+      if (recognition) recognition.stop();
+      const percent = ((hits / targetShots) * 100).toFixed(1);
+      resultsEl.innerText = `You hit ${hits} out of ${targetShots} shots (${percent}%)`;
+      saveHistory({ date: new Date().toLocaleDateString(), percent: parseFloat(percent) });
+      drawChart();
+    }
+
+    function startListening() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return alert("Speech Recognition not supported in this browser.");
+
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      recognition.onresult = function(event) {
+        const last = event.results.length - 1;
+        const transcript = event.results[last][0].transcript.trim().toLowerCase();
+        console.log("Heard:", transcript);
+        recordResult(transcript);
+      };
+
+      recognition.start();
+    }
+
+    function drawChart() {
+      const ctx = document.getElementById('historyChart').getContext('2d');
+      const historyData = getHistory();
+      const labels = historyData.map(h => h.date);
+      const data = historyData.map(h => h.percent);
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Shooting % Over Time',
+            data: data,
+            borderColor: '#00ffcc',
+            backgroundColor: 'rgba(0,255,204,0.1)',
+            tension: 0.3,
+            pointRadius: 5,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
 
